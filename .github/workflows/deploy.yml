@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main] # O 'master' si tu rama principal se llama así
+
+# Permisos necesarios para desplegar en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Permite una sola ejecución concurrente del workflow
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json" # Asegura que usa el lockfile correcto si está en un subdirectorio
+
+      - name: Install dependencies
+        # Si tu package.json está en la raíz, usa solo 'npm ci'.
+        # Si está dentro de la carpeta 'gemini', usa:
+        # run: npm ci
+        # working-directory: ./gemini
+        # Asumiré que 'gemini' es la raíz de tu repositorio basado en tu estructura anterior.
+        # Si 'gemini' es una subcarpeta en tu repo, ajusta las rutas.
+        # Si subiste todo el contenido de 'gemini' a la raíz del repo:
+        run: npm ci
+
+      - name: Build
+        # Igual que arriba, ajusta si es necesario.
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # La carpeta que Vite genera al compilar (por defecto 'dist')
+          # Si tu package.json está en la raíz, es './dist'.
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
