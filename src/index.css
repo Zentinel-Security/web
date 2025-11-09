@@ -1,68 +1,66 @@
+/* Importamos Tailwind v4 */
+@import "tailwindcss";
+
+/* Definimos el tema personalizado usando variables CSS nativas */
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --color-zentinel-dark: #0a0a0a;
+  --color-zentinel-dark-secondary: #161616;
+  --color-zentinel-gold: #d4af37;
+  --color-zentinel-gold-light: #f4d06f;
+  --color-zentinel-gold-dark: #a68a2e;
+  --color-zentinel-text: #ffffff;
+  --color-zentinel-text-muted: #b3b3b3;
+}
+
+/*
+  Nota: Tailwind v4 generará automáticamente clases como:
+  bg-zentinel-dark
+  text-zentinel-gold
+  border-zentinel-gold-dark
+  etc.
+*/
+
+/* Configuración base global */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  color-scheme: dark;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  /* Usamos las clases generadas por el tema */
+  @apply bg-zentinel-dark text-zentinel-text font-sans min-h-screen;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer components {
+  .nav-item-manual {
+    @apply block py-2 px-3 text-zentinel-text-muted hover:text-zentinel-gold hover:bg-zentinel-gold/5 rounded-md transition-all duration-200 border-l-2 border-transparent hover:border-zentinel-gold;
   }
-  a:hover {
-    color: #747bff;
+
+  .manual-section {
+    @apply mb-16 scroll-mt-28; /* scroll-mt ayuda a que el título no quede tapado por el navbar sticky al hacer click */
   }
-  button {
-    background-color: #f9f9f9;
+
+  .manual-h2 {
+    @apply text-3xl font-bold text-white mb-6 pb-4 border-b border-zentinel-gold-dark/20;
+  }
+
+  .manual-subsection {
+    @apply bg-zentinel-dark-secondary/30 p-5 rounded-lg border border-zentinel-gold-dark/10;
+  }
+
+  /* Estilos base para texto rico dentro del manual */
+  .prose-zentinel p {
+    @apply text-zentinel-text-muted leading-relaxed mb-4 text-lg;
+  }
+  .prose-zentinel ul,
+  .prose-zentinel ol {
+    @apply my-4 pl-6 text-zentinel-text-muted space-y-2;
+  }
+  .prose-zentinel li {
+    @apply leading-relaxed;
+  }
+  .prose-zentinel strong {
+    @apply text-zentinel-gold font-semibold;
   }
 }
