@@ -1,7 +1,13 @@
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
 import logo from "../../assets/logo-zentinel.png";
+import { useAuth } from "../../context/AuthContext";
+import LoginModal from "../auth/LoginModal";
 
 export default function Navbar() {
+  const { isAuthenticated, logout, user } = useAuth();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
   const linkBase =
     "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200";
   const linkActive =
@@ -25,36 +31,65 @@ export default function Navbar() {
             </span>
           </div>
 
-          {/* Links */}
-          <div className="flex gap-1 md:gap-4">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? linkActive : linkInactive}`
-              }
-            >
-              Inicio
-            </NavLink>
-            <NavLink
-              to="/metricas"
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? linkActive : linkInactive}`
-              }
-            >
-              Métricas
-            </NavLink>
-            <NavLink
-              to="/manual"
-              className={({ isActive }) =>
-                `${linkBase} ${isActive ? linkActive : linkInactive}`
-              }
-            >
-              Manual
-            </NavLink>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1 md:gap-4">
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : linkInactive}`
+                }
+              >
+                Inicio
+              </NavLink>
+              <NavLink
+                to="/metricas"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : linkInactive}`
+                }
+              >
+                Métricas
+              </NavLink>
+              <NavLink
+                to="/manual"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : linkInactive}`
+                }
+              >
+                Manual
+              </NavLink>
+            </div>
+
+            {isAuthenticated ? (
+              <div className="hidden items-center gap-2 rounded-md border border-zentinel-gold-dark/30 bg-zentinel-dark/60 px-2 py-1 sm:flex">
+                <span className="max-w-[140px] truncate text-xs text-zentinel-text-muted">
+                  {user?.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded bg-zentinel-gold px-2 py-1 text-xs font-bold text-zentinel-dark hover:bg-zentinel-gold-light"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsLoginOpen(true)}
+                className="rounded-md border border-zentinel-gold/50 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-zentinel-gold transition-colors hover:bg-zentinel-gold/10"
+              >
+                Iniciar sesión
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+      />
     </nav>
   );
 }

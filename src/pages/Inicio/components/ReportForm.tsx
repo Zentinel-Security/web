@@ -1,16 +1,35 @@
 // src/pages/Inicio/components/ReportForm.tsx
 import React from "react";
 
-interface ReportFormProps {
-  onCancel: () => void;
+export interface ReportDraft {
+  phone: string;
+  email: string;
+  description: string;
 }
 
-export default function ReportForm({ onCancel }: ReportFormProps) {
+interface ReportFormProps {
+  onCancel: () => void;
+  values: ReportDraft;
+  onChange: (nextValues: ReportDraft) => void;
+  onSubmitReport: (draft: ReportDraft) => void;
+}
+
+export default function ReportForm({
+  onCancel,
+  values,
+  onChange,
+  onSubmitReport,
+}: ReportFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí irá la lógica futura para enviar los datos al backend
-    alert("Reporte enviado (Simulación)");
-    onCancel();
+    onSubmitReport(values);
+  };
+
+  const updateField = (field: keyof ReportDraft, value: string) => {
+    onChange({
+      ...values,
+      [field]: value,
+    });
   };
 
   // Clases reutilizables para los inputs
@@ -39,6 +58,8 @@ export default function ReportForm({ onCancel }: ReportFormProps) {
             id="phone"
             required
             placeholder="+54 9 11 1234-5678"
+            value={values.phone}
+            onChange={(event) => updateField("phone", event.target.value)}
             className={inputClasses}
           />
         </div>
@@ -53,6 +74,8 @@ export default function ReportForm({ onCancel }: ReportFormProps) {
             id="email"
             required
             placeholder="tu@email.com"
+            value={values.email}
+            onChange={(event) => updateField("email", event.target.value)}
             className={inputClasses}
           />
         </div>
@@ -66,6 +89,8 @@ export default function ReportForm({ onCancel }: ReportFormProps) {
             id="description"
             rows={4}
             placeholder="Describe dónde lo viste por última vez o cualquier detalle relevante..."
+            value={values.description}
+            onChange={(event) => updateField("description", event.target.value)}
             className={`${inputClasses} resize-none`}
           />
         </div>
