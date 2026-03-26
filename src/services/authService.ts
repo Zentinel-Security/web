@@ -8,6 +8,7 @@ export interface AuthUser {
 
 export interface LoginResponse {
   token: string;
+  refreshToken?: string;
   usuario: AuthUser;
 }
 
@@ -30,11 +31,17 @@ const API_BASE_URL =
   webEnv?.VITE_API_URL ??
   "http://localhost:3008";
 
-export const loginRequest = async ({ email, password }: LoginPayload): Promise<LoginResponse> => {
-  console.log("[AuthService] Attempting login to:", `${API_BASE_URL}/usuarios/login`);
-  console.log("[AuthService] Payload:", { email, contraseña: password });
+type RawLoginResponse = {
+  token?: string;
+  access_token?: string;
+  refresh_token?: string;
+  usuario?: AuthUser;
+  message?: string;
+  error?: string;
+};
 
-  const response = await fetch(`${API_BASE_URL}/usuarios/login`, {
+export const loginRequest = async ({ email, password }: LoginPayload): Promise<LoginResponse> => {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -44,23 +51,26 @@ export const loginRequest = async ({ email, password }: LoginPayload): Promise<L
       contraseña: password,
     }),
   });
-  console.log("[AuthService] Response status:", response.status, response.statusText);
 
-  const data = await response.json().catch(() => null);
-  console.log("[AuthService] Response data:", data);
+  const data = (await response.json().catch(() => null)) as RawLoginResponse | null;
 
   if (!response.ok) {
     const message =
       data?.message ||
       data?.error ||
       "No se pudo iniciar sesión. Revisa tus credenciales.";
-    console.error("[AuthService] Login error:", message);
     throw new Error(message);
   }
 
-  if (!data?.token || !data?.usuario) {
+  const token = data?.access_token ?? data?.token;
+
+  if (!token || !data?.usuario) {
     throw new Error("Respuesta de login inválida.");
   }
 
-  return data as LoginResponse;
+  return {
+    token,
+    refreshToken: data.refresh_token,
+    usuario: data.usuario,
+  };
 };

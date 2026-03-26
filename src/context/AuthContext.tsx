@@ -13,6 +13,7 @@ import {
 
 interface AuthState {
   token: string;
+  refreshToken?: string;
   user: AuthUser;
 }
 
@@ -34,6 +35,7 @@ const getInitialAuthState = (): AuthState | null => {
     if (!parsed?.token || !parsed?.user) return null;
     return {
       token: parsed.token,
+      refreshToken: parsed.refreshToken,
       user: parsed.user,
     } as AuthState;
   } catch {
@@ -47,9 +49,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState | null>(getInitialAuthState);
 
   const login = async (email: string, password: string) => {
-    const { token, usuario }: LoginResponse = await loginRequest({ email, password });
+    const { token, refreshToken, usuario }: LoginResponse = await loginRequest({ email, password });
     const nextState: AuthState = {
       token,
+      refreshToken,
       user: usuario,
     };
 
