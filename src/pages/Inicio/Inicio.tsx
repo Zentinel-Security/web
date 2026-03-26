@@ -1,9 +1,57 @@
 // src/pages/Inicio/Inicio.tsx
 import { useState } from "react";
 import ReportForm from "./components/ReportForm";
+import type { ReportDraft } from "./components/ReportForm";
+import ReportSummaryModal from "./components/ReportSummaryModal";
+import LoginModal from "../../components/auth/LoginModal";
+import { useAuth } from "../../context/AuthContext";
+
+const initialDraft: ReportDraft = {
+  phone: "",
+  email: "",
+  description: "",
+};
 
 export default function Inicio() {
+  const { isAuthenticated } = useAuth();
   const [showForm, setShowForm] = useState(false);
+  const [draft, setDraft] = useState<ReportDraft>(initialDraft);
+  const [pendingReport, setPendingReport] = useState<ReportDraft | null>(null);
+  const [summaryReport, setSummaryReport] = useState<ReportDraft | null>(null);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+
+  const handleSubmitReport = (report: ReportDraft) => {
+    setFeedbackMessage("");
+
+    if (!isAuthenticated) {
+      setPendingReport(report);
+      setIsLoginOpen(true);
+      return;
+    }
+
+    setSummaryReport(report);
+    setIsSummaryOpen(true);
+  };
+
+  const handleLoginSuccess = () => {
+    if (!pendingReport) return;
+    setSummaryReport(pendingReport);
+    setPendingReport(null);
+    setIsSummaryOpen(true);
+  };
+
+  const handleConfirmReport = () => {
+    setIsSummaryOpen(false);
+    setSummaryReport(null);
+    setPendingReport(null);
+    setDraft(initialDraft);
+    setShowForm(false);
+    setFeedbackMessage(
+      "Reporte confirmado. La integración con el backend de incidentes se agregará en la próxima etapa.",
+    );
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -53,9 +101,40 @@ export default function Inicio() {
           </button>
         ) : (
           /* Estado secundario: El formulario */
-          <ReportForm onCancel={() => setShowForm(false)} />
+          <ReportForm
+            onCancel={() => {
+              setShowForm(false);
+              setPendingReport(null);
+              setFeedbackMessage("");
+            }}
+            values={draft}
+            onChange={setDraft}
+            onSubmitReport={handleSubmitReport}
+          />
         )}
+
+        {feedbackMessage ? (
+          <div className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-950/30 p-4 text-sm text-emerald-200">
+            {feedbackMessage}
+          </div>
+        ) : null}
       </div>
+
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onSuccess={handleLoginSuccess}
+        title="Inicia sesión para continuar"
+        subtitle="Necesitas autenticarte para confirmar el reporte del incidente."
+      />
+
+      <ReportSummaryModal
+        isOpen={isSummaryOpen}
+        report={summaryReport}
+        onClose={() => setIsSummaryOpen(false)}
+        onEdit={() => setIsSummaryOpen(false)}
+        onConfirm={handleConfirmReport}
+      />
     </div>
   );
 }
