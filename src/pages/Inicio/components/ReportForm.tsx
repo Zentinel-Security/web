@@ -2,9 +2,11 @@
 import React from "react";
 
 export interface ReportDraft {
+  reportType: "Perdido" | "Robado";
   phone: string;
   email: string;
   description: string;
+  includeLocation: boolean;
 }
 
 interface ReportFormProps {
@@ -25,7 +27,7 @@ export default function ReportForm({
     onSubmitReport(values);
   };
 
-  const updateField = (field: keyof ReportDraft, value: string) => {
+  const updateField = <K extends keyof ReportDraft>(field: K, value: ReportDraft[K]) => {
     onChange({
       ...values,
       [field]: value,
@@ -48,6 +50,23 @@ export default function ReportForm({
       </h3>
 
       <div className="space-y-5">
+        <div>
+          <label htmlFor="report-type" className={labelClasses}>
+            Tipo de reporte
+          </label>
+          <select
+            id="report-type"
+            value={values.reportType}
+            onChange={(event) =>
+              updateField("reportType", event.target.value as ReportDraft["reportType"])
+            }
+            className={inputClasses}
+          >
+            <option value="Perdido">Perdido</option>
+            <option value="Robado">Robado</option>
+          </select>
+        </div>
+
         {/* Campo Teléfono */}
         <div>
           <label htmlFor="phone" className={labelClasses}>
@@ -94,6 +113,16 @@ export default function ReportForm({
             className={`${inputClasses} resize-none`}
           />
         </div>
+
+        <label className="flex items-center gap-3 rounded-md border border-zentinel-gold-dark/30 bg-zentinel-dark/40 p-3 text-sm text-zentinel-text-muted">
+          <input
+            type="checkbox"
+            checked={values.includeLocation}
+            onChange={(event) => updateField("includeLocation", event.target.checked)}
+            className="h-4 w-4 rounded border-zentinel-gold-dark/40 bg-zentinel-dark text-zentinel-gold focus:ring-zentinel-gold"
+          />
+          Incluir última ubicación conocida en el reporte
+        </label>
 
         {/* Botones de Acción */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4">
