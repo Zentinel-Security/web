@@ -1,9 +1,12 @@
+import { API_BASE_URL } from "../config/apiBaseUrl";
+
 export interface AuthUser {
   id: number;
   nombre: string;
   apellido: string;
   email: string;
   avatar?: string;
+  estado_cuenta?: "activa" | "suspendida";
 }
 
 export interface LoginResponse {
@@ -16,20 +19,6 @@ interface LoginPayload {
   email: string;
   password: string;
 }
-
-type WebEnv = ImportMeta & {
-  env?: {
-    VITE_BACKEND_URL?: string;
-    VITE_API_URL?: string;
-  };
-};
-
-const webEnv = (import.meta as WebEnv).env;
-
-const API_BASE_URL =
-  webEnv?.VITE_BACKEND_URL ??
-  webEnv?.VITE_API_URL ??
-  "http://localhost:3008";
 
 type RawLoginResponse = {
   token?: string;

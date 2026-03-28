@@ -1,19 +1,27 @@
 // src/pages/Inicio/Inicio.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReportForm from "./components/ReportForm";
 import type { ReportDraft } from "./components/ReportForm";
 import ReportSummaryModal from "./components/ReportSummaryModal";
 import LoginModal from "../../components/auth/LoginModal";
 import { useAuth } from "../../context/AuthContext";
+import {
+  createDeviceReport,
+  getMyReportStatus,
+  reactivateMyAccount,
+  type DeviceReport,
+} from "../../services/reportService";
 
 const initialDraft: ReportDraft = {
+  reportType: "Perdido",
   phone: "",
   email: "",
   description: "",
+  includeLocation: false,
 };
 
 export default function Inicio() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<ReportDraft>(initialDraft);
   const [pendingReport, setPendingReport] = useState<ReportDraft | null>(null);
@@ -21,6 +29,56 @@ export default function Inicio() {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [isSavingReport, setIsSavingReport] = useState(false);
+  const [isReactivatingAccount, setIsReactivatingAccount] = useState(false);
+  const [isAccountSuspended, setIsAccountSuspended] = useState(
+    user?.estado_cuenta === "suspendida",
+  );
+  const [latestReport, setLatestReport] = useState<DeviceReport | null>(null);
+
+  useEffect(() => {
+    const syncReportStatus = async () => {
+      if (!isAuthenticated || !token) {
+        setIsAccountSuspended(false);
+        setLatestReport(null);
+        return;
+      }
+
+      try {
+        const status = await getMyReportStatus(token);
+        setIsAccountSuspended(status.estado_cuenta === "suspendida");
+        setLatestReport(status.ultimo_reporte);
+      } catch {
+        setIsAccountSuspended(user?.estado_cuenta === "suspendida");
+      }
+    };
+
+    void syncReportStatus();
+  }, [isAuthenticated, token, user?.estado_cuenta]);
+
+  const handleReactivateAccount = async () => {
+    if (!token) {
+      setFeedbackMessage("No se pudo reactivar la cuenta. Inicia sesión nuevamente.");
+      return;
+    }
+
+    setIsReactivatingAccount(true);
+
+    try {
+      const status = await reactivateMyAccount(token);
+      setIsAccountSuspended(status.estado_cuenta === "suspendida");
+      setLatestReport(status.ultimo_reporte);
+      setFeedbackMessage("Cuenta reactivada correctamente.");
+    } catch (error) {
+      if (error instanceof Error) {
+        setFeedbackMessage(error.message);
+      } else {
+        setFeedbackMessage("No se pudo reactivar la cuenta.");
+      }
+    } finally {
+      setIsReactivatingAccount(false);
+    }
+  };
 
   const handleSubmitReport = (report: ReportDraft) => {
     setFeedbackMessage("");
@@ -42,15 +100,44 @@ export default function Inicio() {
     setIsSummaryOpen(true);
   };
 
-  const handleConfirmReport = () => {
-    setIsSummaryOpen(false);
-    setSummaryReport(null);
-    setPendingReport(null);
-    setDraft(initialDraft);
-    setShowForm(false);
-    setFeedbackMessage(
-      "Reporte confirmado. La integración con el backend de incidentes se agregará en la próxima etapa.",
-    );
+  const handleConfirmReport = async () => {
+    if (!summaryReport || !token) {
+      setFeedbackMessage("No se pudo confirmar el reporte. Inicia sesión nuevamente.");
+      setIsSummaryOpen(false);
+      return;
+    }
+
+    setIsSavingReport(true);
+
+    try {
+      await createDeviceReport({
+        draft: summaryReport,
+        token,
+      });
+
+      setIsAccountSuspended(true);
+
+      setIsSummaryOpen(false);
+      setSummaryReport(null);
+      setPendingReport(null);
+      setDraft(initialDraft);
+      setShowForm(false);
+      try {
+        const status = await getMyReportStatus(token);
+        setLatestReport(status.ultimo_reporte);
+      } catch {
+        setLatestReport(null);
+      }
+      setFeedbackMessage("Reporte creado y cuenta suspendida correctamente.");
+    } catch (error) {
+      if (error instanceof Error) {
+        setFeedbackMessage(error.message);
+      } else {
+        setFeedbackMessage("No se pudo guardar el reporte.");
+      }
+    } finally {
+      setIsSavingReport(false);
+    }
   };
 
   return (
@@ -67,7 +154,46 @@ export default function Inicio() {
       </div>
 
       <div className="mt-8">
-        {!showForm ? (
+        {isAuthenticated && isAccountSuspended ? (
+          <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-6 text-red-100">
+            <h3 className="text-xl font-bold text-red-200">Cuenta suspendida</h3>
+            <p className="mt-2 text-sm text-red-100/90">
+              Tu cuenta se encuentra en estado suspendida por un reporte activo en estado creado.
+            </p>
+
+            {latestReport ? (
+              <div className="mt-4 rounded-lg border border-red-400/30 bg-black/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
+                  Último reporte enviado
+                </p>
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold">Tipo:</span> {latestReport.tipo_reporte}
+                </p>
+                <p className="mt-1 text-sm">
+                  <span className="font-semibold">Estado:</span> {latestReport.estado_reporte}
+                </p>
+                <p className="mt-1 text-sm">
+                  <span className="font-semibold">Incluye ubicación:</span>{" "}
+                  {latestReport.incluye_ubicacion ? "Sí" : "No"}
+                </p>
+                <p className="mt-1 text-sm whitespace-pre-line">
+                  <span className="font-semibold">Descripción:</span>{" "}
+                  {latestReport.descripcion || "Sin descripción."}
+                </p>
+              </div>
+            ) : null}
+
+            <div className="mt-5">
+              <button
+                onClick={handleReactivateAccount}
+                disabled={isReactivatingAccount}
+                className="rounded-lg border border-zentinel-gold/60 bg-zentinel-gold/10 px-4 py-2 text-sm font-semibold text-zentinel-gold transition-colors hover:bg-zentinel-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isReactivatingAccount ? "Reactivando cuenta..." : "Reactivar cuenta"}
+              </button>
+            </div>
+          </div>
+        ) : !showForm ? (
           /* Estado inicial: Botón grande de llamada a la acción */
           <button
             onClick={() => setShowForm(true)}
@@ -134,6 +260,7 @@ export default function Inicio() {
         onClose={() => setIsSummaryOpen(false)}
         onEdit={() => setIsSummaryOpen(false)}
         onConfirm={handleConfirmReport}
+        isSaving={isSavingReport}
       />
     </div>
   );

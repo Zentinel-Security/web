@@ -5,7 +5,8 @@ interface ReportSummaryModalProps {
   report: ReportDraft | null;
   onClose: () => void;
   onEdit: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
+  isSaving?: boolean;
 }
 
 export default function ReportSummaryModal({
@@ -14,6 +15,7 @@ export default function ReportSummaryModal({
   onClose,
   onEdit,
   onConfirm,
+  isSaving = false,
 }: ReportSummaryModalProps) {
   if (!isOpen || !report) return null;
 
@@ -32,6 +34,13 @@ export default function ReportSummaryModal({
         </p>
 
         <div className="mt-6 space-y-4 rounded-lg border border-zentinel-gold-dark/30 bg-zentinel-dark/60 p-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
+              Tipo de reporte
+            </p>
+            <p className="mt-1 text-zentinel-text">{report.reportType}</p>
+          </div>
+
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
               Número de celular extraviado
@@ -54,12 +63,22 @@ export default function ReportSummaryModal({
               {report.description || "Sin detalles adicionales."}
             </p>
           </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
+              Última ubicación conocida
+            </p>
+            <p className="mt-1 text-zentinel-text">
+              {report.includeLocation ? "Incluida" : "No incluida"}
+            </p>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onEdit}
+            disabled={isSaving}
             className="rounded-md border border-zentinel-gold-dark/30 px-4 py-2 text-sm font-medium text-zentinel-text-muted transition-colors hover:bg-white/5"
           >
             Volver a editar
@@ -67,9 +86,10 @@ export default function ReportSummaryModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-md bg-zentinel-gold px-4 py-2 text-sm font-bold text-zentinel-dark transition-colors hover:bg-zentinel-gold-light"
+            disabled={isSaving}
+            className="rounded-md bg-zentinel-gold px-4 py-2 text-sm font-bold text-zentinel-dark transition-colors hover:bg-zentinel-gold-light disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Confirmar reporte
+            {isSaving ? "Guardando..." : "Confirmar reporte"}
           </button>
         </div>
       </div>
