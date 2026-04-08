@@ -1,9 +1,21 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
 import Inicio from "./pages/Inicio/Inicio";
 import Metricas from "./pages/Metricas/Metricas";
 import Manual from "./pages/Manual/Manual";
-import NotFound from "./pages/NotFound/NotFound"; // 1. Importa el nuevo componente
+import NotFound from "./pages/NotFound/NotFound";
+import Gestion from "./pages/Gestion/Gestion";
+import { useAuth } from "./context/AuthContext";
+
+function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+
+  if (!user?.es_admin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -13,7 +25,8 @@ function App() {
         <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8">
           <Routes>
             <Route path="/" element={<Inicio />} />
-            <Route path="/metricas" element={<Metricas />} />
+            <Route path="/metricas" element={<AdminOnlyRoute><Metricas /></AdminOnlyRoute>} />
+            <Route path="/gestion" element={<AdminOnlyRoute><Gestion /></AdminOnlyRoute>} />
             <Route path="/manual" element={<Manual />} />
 
             <Route path="*" element={<NotFound />} />
