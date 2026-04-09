@@ -7,6 +7,7 @@ import LoginModal from "../auth/LoginModal";
 export default function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const isAdmin = Boolean(user?.es_admin);
 
   const linkBase =
     "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200";
@@ -42,14 +43,26 @@ export default function Navbar() {
               >
                 Inicio
               </NavLink>
-              <NavLink
-                to="/metricas"
-                className={({ isActive }) =>
-                  `${linkBase} ${isActive ? linkActive : linkInactive}`
-                }
-              >
-                Métricas
-              </NavLink>
+              {isAdmin ? (
+                <>
+                  <NavLink
+                    to="/metricas"
+                    className={({ isActive }) =>
+                      `${linkBase} ${isActive ? linkActive : linkInactive}`
+                    }
+                  >
+                    Métricas
+                  </NavLink>
+                  <NavLink
+                    to="/gestion"
+                    className={({ isActive }) =>
+                      `${linkBase} ${isActive ? linkActive : linkInactive}`
+                    }
+                  >
+                    Gestión
+                  </NavLink>
+                </>
+              ) : null}
               <NavLink
                 to="/manual"
                 className={({ isActive }) =>
