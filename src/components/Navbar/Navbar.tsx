@@ -64,6 +64,14 @@ export default function Navbar() {
                 </>
               ) : null}
               <NavLink
+                to="/soporte"
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : linkInactive}`
+                }
+              >
+                Soporte
+              </NavLink>
+              <NavLink
                 to="/manual"
                 className={({ isActive }) =>
                   `${linkBase} ${isActive ? linkActive : linkInactive}`
