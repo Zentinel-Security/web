@@ -5,6 +5,7 @@ import Metricas from "./pages/Metricas/Metricas";
 import Manual from "./pages/Manual/Manual";
 import NotFound from "./pages/NotFound/NotFound";
 import Gestion from "./pages/Gestion/Gestion";
+import Soporte from "./pages/Soporte/Soporte";
 import { useAuth } from "./context/AuthContext";
 
 function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ function App() {
             <Route path="/" element={<Inicio />} />
             <Route path="/metricas" element={<AdminOnlyRoute><Metricas /></AdminOnlyRoute>} />
             <Route path="/gestion" element={<AdminOnlyRoute><Gestion /></AdminOnlyRoute>} />
+            <Route path="/soporte" element={<Soporte />} />
             <Route path="/manual" element={<Manual />} />
 
             <Route path="*" element={<NotFound />} />

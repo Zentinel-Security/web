@@ -21,7 +21,7 @@ const initialDraft: ReportDraft = {
 };
 
 export default function Inicio() {
-  const { isAuthenticated, token, user } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<ReportDraft>(initialDraft);
   const [pendingReport, setPendingReport] = useState<ReportDraft | null>(null);
@@ -31,30 +31,34 @@ export default function Inicio() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [isReactivatingAccount, setIsReactivatingAccount] = useState(false);
-  const [isAccountSuspended, setIsAccountSuspended] = useState(
-    user?.estado_cuenta === "suspendida",
-  );
+  const [isAccountSuspended, setIsAccountSuspended] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(isAuthenticated);
   const [latestReport, setLatestReport] = useState<DeviceReport | null>(null);
+  const [feedbackIsError, setFeedbackIsError] = useState(false);
 
   useEffect(() => {
     const syncReportStatus = async () => {
       if (!isAuthenticated || !token) {
         setIsAccountSuspended(false);
+        setIsLoadingStatus(false);
         setLatestReport(null);
         return;
       }
 
+      setIsLoadingStatus(true);
       try {
         const status = await getMyReportStatus(token);
         setIsAccountSuspended(status.estado_cuenta === "suspendida");
         setLatestReport(status.ultimo_reporte);
       } catch {
-        setIsAccountSuspended(user?.estado_cuenta === "suspendida");
+        setIsAccountSuspended(false);
+      } finally {
+        setIsLoadingStatus(false);
       }
     };
 
     void syncReportStatus();
-  }, [isAuthenticated, token, user?.estado_cuenta]);
+  }, [isAuthenticated, token]);
 
   const handleReactivateAccount = async () => {
     if (!token) {
@@ -68,8 +72,10 @@ export default function Inicio() {
       const status = await reactivateMyAccount(token);
       setIsAccountSuspended(status.estado_cuenta === "suspendida");
       setLatestReport(status.ultimo_reporte);
+      setFeedbackIsError(false);
       setFeedbackMessage("Cuenta reactivada correctamente.");
     } catch (error) {
+      setFeedbackIsError(true);
       if (error instanceof Error) {
         setFeedbackMessage(error.message);
       } else {
@@ -128,8 +134,10 @@ export default function Inicio() {
       } catch {
         setLatestReport(null);
       }
+      setFeedbackIsError(false);
       setFeedbackMessage("Reporte creado y cuenta suspendida correctamente.");
     } catch (error) {
+      setFeedbackIsError(true);
       if (error instanceof Error) {
         setFeedbackMessage(error.message);
       } else {
@@ -154,7 +162,11 @@ export default function Inicio() {
       </div>
 
       <div className="mt-8">
-        {isAuthenticated && isAccountSuspended ? (
+        {isAuthenticated && isLoadingStatus ? (
+          <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-8 text-center">
+            <p className="text-zentinel-text-muted text-sm">Verificando estado de la cuenta...</p>
+          </div>
+        ) : isAuthenticated && isAccountSuspended ? (
           <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-6 text-red-100">
             <h3 className="text-xl font-bold text-red-200">Cuenta suspendida</h3>
             <p className="mt-2 text-sm text-red-100/90">
@@ -194,7 +206,7 @@ export default function Inicio() {
             </div>
           </div>
         ) : !showForm ? (
-          /* Estado inicial: Botón grande de llamada a la acción */
+          /* Estado inicial: Botón grande de llamada a la acción - también para usuarios no autenticados */
           <button
             onClick={() => setShowForm(true)}
             className="group w-full sm:w-auto flex flex-col items-center sm:flex-row gap-6 bg-zentinel-dark-secondary hover:bg-zentinel-dark-secondary/80 border-2 border-zentinel-gold p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.3)] hover:scale-[1.02] cursor-pointer text-left"
@@ -240,7 +252,11 @@ export default function Inicio() {
         )}
 
         {feedbackMessage ? (
-          <div className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-950/30 p-4 text-sm text-emerald-200">
+          <div className={`mt-6 rounded-lg border p-4 text-sm ${
+            feedbackIsError
+              ? "border-red-500/30 bg-red-950/30 text-red-300"
+              : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
+          }`}>
             {feedbackMessage}
           </div>
         ) : null}
