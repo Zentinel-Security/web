@@ -46,3 +46,21 @@ export const getReportesAdmin = async (
   if (!response.ok) throw new Error(json?.message ?? "No se pudieron obtener los reportes.");
   return (json as { reportes: ReporteDispositivoAdmin[] }).reportes;
 };
+
+export const suspenderUsuario = async (token: string, idUsuario: number): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/usuarios/${idUsuario}/suspender`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(json?.error ?? "Error al suspender usuario");
+};
+
+export const reactivarUsuario = async (token: string, idUsuario: number): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/usuarios/${idUsuario}/reactivar`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(json?.error ?? "Error al reactivar usuario");
+};
