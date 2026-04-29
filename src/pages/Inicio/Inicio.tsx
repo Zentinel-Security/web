@@ -42,6 +42,13 @@ export default function Inicio() {
         setIsAccountSuspended(false);
         setIsLoadingStatus(false);
         setLatestReport(null);
+
+        setFeedbackMessage("");
+        setFeedbackIsError(false);
+        setDraft(initialDraft); // Borra los datos oxidados del formulario
+        setPendingReport(null);
+        setShowForm(false); // Vuelve a mostrar el botón gigante principal
+
         return;
       }
 
@@ -99,11 +106,52 @@ export default function Inicio() {
     setIsSummaryOpen(true);
   };
 
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = async () => {
     if (!pendingReport) return;
-    setSummaryReport(pendingReport);
-    setPendingReport(null);
-    setIsSummaryOpen(true);
+
+    // 1. Cerramos el modal de login inmediatamente
+    setIsLoginOpen(false);
+
+    // 2. Obtenemos el token más reciente de forma síncrona desde localStorage
+    const stored = localStorage.getItem("zentinel-web-auth");
+    let currentToken = token;
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        currentToken = parsed.token;
+      } catch {
+        // Ignoramos el error silenciosamente si el JSON almacenado es inválido
+      }
+    }
+
+    if (!currentToken) return;
+
+    // 3. Verificamos el estado de la cuenta antes de abrir el modal de confirmación
+    setIsLoadingStatus(true);
+    try {
+      const status = await getMyReportStatus(currentToken);
+      setIsAccountSuspended(status.estado_cuenta === "suspendida");
+      setLatestReport(status.ultimo_reporte);
+
+      if (status.estado_cuenta === "suspendida") {
+        // Cuenta suspendida: abortamos el reporte pendiente y mostramos mensaje
+        setPendingReport(null);
+        setShowForm(false);
+        setFeedbackIsError(true);
+        setFeedbackMessage("No se pudo generar el reporte: tu cuenta ya se encuentra suspendida por un reporte activo.");
+      } else {
+        // Cuenta activa: avanzamos al modal de confirmación
+        setSummaryReport(pendingReport);
+        setPendingReport(null);
+        setIsSummaryOpen(true);
+      }
+    } catch (error) {
+      setFeedbackIsError(true);
+      console.error("Error al obtener estado:", error);
+      setFeedbackMessage("Error al verificar el estado de la cuenta tras iniciar sesión.");
+    } finally {
+      setIsLoadingStatus(false);
+    }
   };
 
   const handleConfirmReport = async () => {
@@ -252,11 +300,10 @@ export default function Inicio() {
         )}
 
         {feedbackMessage ? (
-          <div className={`mt-6 rounded-lg border p-4 text-sm ${
-            feedbackIsError
-              ? "border-red-500/30 bg-red-950/30 text-red-300"
-              : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
-          }`}>
+          <div className={`mt-6 rounded-lg border p-4 text-sm ${feedbackIsError
+            ? "border-red-500/30 bg-red-950/30 text-red-300"
+            : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
+            }`}>
             {feedbackMessage}
           </div>
         ) : null}
