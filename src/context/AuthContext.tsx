@@ -3,6 +3,8 @@ import {
   useContext,
   useMemo,
   useState,
+  useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import {
@@ -60,10 +62,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthState(nextState);
   };
 
-  const logout = () => {
+  // 1. Envolvemos logout en useCallback para estabilizar la función
+  const logout = useCallback(() => {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setAuthState(null);
-  };
+  }, []);
+
+  // 2. NUEVO: El "oído" que escucha a apiFetch
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.warn("Sesión expirada o inválida. Cerrando sesión por seguridad.");
+
+      // 1. Cerramos la sesión en el estado
+      logout();
+
+      // 2. Feedback visual inmediato para el usuario
+      alert("Tu sesión ha expirado por inactividad o seguridad. Por favor, vuelve a iniciar sesión.");
+
+      // 3. Lo expulsamos a la pantalla de inicio (útil si estaba metido en /gestion)
+      window.location.hash = "/";
+    };
+
+    window.addEventListener("zentinel:unauthorized", handleUnauthorized);
+
+    return () => {
+      window.removeEventListener("zentinel:unauthorized", handleUnauthorized);
+    };
+  }, [logout]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -73,12 +98,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login,
       logout,
     }),
-    [authState],
+    [authState, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
 

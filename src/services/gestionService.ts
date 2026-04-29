@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config/apiBaseUrl";
+import { apiFetch } from "../utils/apiFetch";
 
 export interface UsuarioAdmin {
   id: number;
@@ -26,7 +27,7 @@ export interface ReporteDispositivoAdmin {
 }
 
 export const getUsuariosAdmin = async (token: string): Promise<UsuarioAdmin[]> => {
-  const response = await fetch(`${API_BASE_URL}/usuarios/admin/todos`, {
+  const response = await apiFetch(`${API_BASE_URL}/usuarios/admin/todos`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -38,7 +39,7 @@ export const getUsuariosAdmin = async (token: string): Promise<UsuarioAdmin[]> =
 export const getReportesAdmin = async (
   token: string,
 ): Promise<ReporteDispositivoAdmin[]> => {
-  const response = await fetch(`${API_BASE_URL}/reportes-dispositivo/admin/todos`, {
+  const response = await apiFetch(`${API_BASE_URL}/reportes-dispositivo/admin/todos`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 

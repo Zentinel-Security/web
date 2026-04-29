@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config/apiBaseUrl";
+import { apiFetch } from "../utils/apiFetch";
 
 export type TicketTipo =
   | "consulta"
@@ -55,7 +56,7 @@ export const createTicket = async (
   token: string,
   data: { tipo: TicketTipo; asunto: string; descripcion: string },
 ): Promise<{ ticket: Ticket }> => {
-  const response = await fetch(`${API_BASE_URL}/soporte/tickets`, {
+  const response = await apiFetch(`${API_BASE_URL}/soporte/tickets`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,7 +71,7 @@ export const createTicket = async (
 };
 
 export const getMisTickets = async (token: string): Promise<Ticket[]> => {
-  const response = await fetch(`${API_BASE_URL}/soporte/tickets/mis-tickets`, {
+  const response = await apiFetch(`${API_BASE_URL}/soporte/tickets/mis-tickets`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -83,7 +84,7 @@ export const getTicketDetalle = async (
   token: string,
   id: number,
 ): Promise<TicketDetalle> => {
-  const response = await fetch(`${API_BASE_URL}/soporte/tickets/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/soporte/tickets/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -97,7 +98,7 @@ export const agregarRespuesta = async (
   idTicket: number,
   mensaje: string,
 ): Promise<{ respuesta: RespuestaTicket }> => {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/soporte/tickets/${idTicket}/respuestas`,
     {
       method: "POST",
@@ -125,7 +126,7 @@ export const getAllTicketsAdmin = async (
   if (filters?.tipo)   params.set("tipo", filters.tipo);
 
   const qs = params.toString() ? `?${params.toString()}` : "";
-  const response = await fetch(`${API_BASE_URL}/soporte/admin/tickets${qs}`, {
+  const response = await apiFetch(`${API_BASE_URL}/soporte/admin/tickets${qs}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -138,7 +139,7 @@ export const getTicketDetalleAdmin = async (
   token: string,
   id: number,
 ): Promise<TicketDetalleAdmin> => {
-  const response = await fetch(`${API_BASE_URL}/soporte/admin/tickets/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/soporte/admin/tickets/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -152,7 +153,7 @@ export const responderTicketAdmin = async (
   idTicket: number,
   mensaje: string,
 ): Promise<{ respuesta: RespuestaTicket }> => {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/soporte/admin/tickets/${idTicket}/respuestas`,
     {
       method: "POST",
@@ -174,7 +175,7 @@ export const cambiarEstadoTicket = async (
   idTicket: number,
   estado: TicketEstado,
 ): Promise<{ ticket: Ticket }> => {
-  const response = await fetch(
+  const response = await apiFetch(
     `${API_BASE_URL}/soporte/admin/tickets/${idTicket}/estado`,
     {
       method: "PATCH",
