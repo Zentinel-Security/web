@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getUsuariosAdmin, getReportesAdmin, type UsuarioAdmin, type ReporteDispositivoAdmin } from "../../services/gestionService";
+import { getUsuariosAdmin, getReportesAdmin, suspenderUsuario, reactivarUsuario, type UsuarioAdmin, type ReporteDispositivoAdmin } from "../../services/gestionService";
 import { getAllTicketsAdmin, type TicketConUsuario, type TicketEstado, type TicketTipo } from "../../services/ticketService";
 import { TIPO_LABELS, ESTADO_BADGE, ESTADO_LABELS } from "../Soporte/soporteConstants";
 import AdminTicketDetail from "./components/AdminTicketDetail";
@@ -48,6 +48,31 @@ export default function Gestion() {
   const [reportes, setReportes] = useState<ReporteDispositivoAdmin[]>([]);
   const [loadingReportes, setLoadingReportes] = useState(false);
   const [errorReportes, setErrorReportes] = useState("");
+
+  // ─── User filters ─────────────────────────────────────────
+  const [searchValue, setSearchValue] = useState("");
+  const [searchMode, setSearchMode] = useState<"nombre" | "email">("nombre");
+  const [searchEstado, setSearchEstado] = useState<"" | "activa" | "suspendida">("");
+
+  // ─── User detail modal ───────────────────────────────────────
+  const [selectedUser, setSelectedUser] = useState<UsuarioAdmin | null>(null);
+  const [confirmSuspend, setConfirmSuspend] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // ─── Toast ───────────────────────────────────────────────────
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message, type });
+    toastTimer.current = setTimeout(() => setToast(null), 3500);
+  };
+
+  const closeModal = () => {
+    setSelectedUser(null);
+    setConfirmSuspend(false);
+  };
 
   // ─── Tickets ─────────────────────────────────────────────
   const [tickets, setTickets] = useState<TicketConUsuario[]>([]);
@@ -116,6 +141,39 @@ export default function Gestion() {
     void loadTickets();
   };
 
+  const handleSuspend = async () => {
+    if (!selectedUser || !token) return;
+    setActionLoading(true);
+    try {
+      await suspenderUsuario(token, selectedUser.id);
+      const updated: UsuarioAdmin = { ...selectedUser, estado_cuenta: "suspendida", activo: false };
+      setUsuarios((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)));
+      setSelectedUser(updated);
+      setConfirmSuspend(false);
+      showToast(`La cuenta de ${selectedUser.nombre} ${selectedUser.apellido} fue suspendida.`, "success");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error al suspender usuario", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReactivar = async () => {
+    if (!selectedUser || !token) return;
+    setActionLoading(true);
+    try {
+      await reactivarUsuario(token, selectedUser.id);
+      const updated: UsuarioAdmin = { ...selectedUser, estado_cuenta: "activa", activo: true };
+      setUsuarios((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)));
+      setSelectedUser(updated);
+      showToast(`La cuenta de ${selectedUser.nombre} ${selectedUser.apellido} fue reactivada.`, "success");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error al reactivar usuario", "error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleTicketUpdated = (ticketId: number, newEstado: TicketEstado) => {
     setTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, estado: newEstado } : t)),
@@ -129,6 +187,22 @@ export default function Gestion() {
         : "text-zentinel-text-muted hover:text-zentinel-gold-light hover:bg-white/5"
     }`;
 
+  // ─── Derived ──────────────────────────────────────────────
+  const filteredUsuarios = usuarios.filter((u) => {
+    if (searchValue) {
+      if (searchMode === "nombre") {
+        if (!`${u.nombre} ${u.apellido}`.toLowerCase().includes(searchValue.toLowerCase())) return false;
+      } else {
+        if (!u.email.toLowerCase().includes(searchValue.toLowerCase())) return false;
+      }
+    }
+    if (searchEstado) {
+      const estado = u.activo ? "activa" : "suspendida";
+      if (estado !== searchEstado) return false;
+    }
+    return true;
+  });
+
   // ─── Stats header ─────────────────────────────────────────
   const totalUsuarios   = usuarios.length;
   const suspendidos     = usuarios.filter((u) => !u.activo).length;
@@ -137,6 +211,83 @@ export default function Gestion() {
 
   return (
     <div className="space-y-6">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg px-5 py-3 text-sm font-medium shadow-xl ${toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
+          <span>{toast.type === "success" ? "✓" : "✕"}</span>
+          {toast.message}
+        </div>
+      )}
+
+      {/* User detail modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+          <div className="w-full max-w-sm rounded-xl border border-zentinel-gold-dark/30 bg-zentinel-dark-secondary p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between">
+              <h3 className="text-lg font-bold text-zentinel-text">Detalle de usuario</h3>
+              <button onClick={closeModal} className="text-xl leading-none text-zentinel-text-muted transition-colors hover:text-zentinel-text">×</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Nombre</p>
+                <p className="mt-0.5 font-semibold text-zentinel-text">{selectedUser.nombre} {selectedUser.apellido}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Email</p>
+                <p className="mt-0.5 text-sm text-zentinel-text">{selectedUser.email}</p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Rol</p>
+                <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${selectedUser.id_rol === 2 ? "bg-zentinel-gold/15 text-zentinel-gold" : "bg-white/5 text-zentinel-text-muted"}`}>
+                  {selectedUser.rol_descripcion ?? "usuario"}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Estado</p>
+                <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${estadoCuentaStyle(selectedUser.activo)}`}>
+                  {selectedUser.activo ? "Activa" : "Suspendida"}
+                </span>
+              </div>
+            </div>
+            {confirmSuspend && (
+              <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+                <p className="text-sm text-red-300">
+                  ¿Confirmar suspensión de <span className="font-semibold">{selectedUser.nombre}</span>? El usuario no podrá iniciar sesión hasta ser reactivado.
+                </p>
+              </div>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              {confirmSuspend ? (
+                <>
+                  <button onClick={() => setConfirmSuspend(false)} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-white/5 disabled:opacity-50">
+                    Cancelar
+                  </button>
+                  <button onClick={handleSuspend} disabled={actionLoading} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50">
+                    {actionLoading ? "Suspendiendo…" : "Sí, suspender"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={closeModal} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-white/5">
+                    Cerrar
+                  </button>
+                  {selectedUser.activo ? (
+                    <button onClick={() => setConfirmSuspend(true)} className="rounded-lg bg-red-600/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-600/40">
+                      Suspender cuenta
+                    </button>
+                  ) : (
+                    <button onClick={handleReactivar} disabled={actionLoading} className="rounded-lg bg-green-600/20 px-4 py-2 text-sm font-semibold text-green-400 transition-colors hover:bg-green-600/40 disabled:opacity-50">
+                      {actionLoading ? "Reactivando…" : "Reactivar cuenta"}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <header>
         <h1 className="text-3xl font-bold text-zentinel-gold">Gestión de Backoffice</h1>
         <p className="mt-2 text-zentinel-text-muted">
@@ -175,13 +326,50 @@ export default function Gestion() {
           <div className="flex items-center justify-between border-b border-zentinel-gold-dark/20 px-6 py-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">Usuarios</h2>
             <span className="rounded-full bg-zentinel-gold/10 px-3 py-0.5 text-xs text-zentinel-gold">
-              {loadingUsuarios ? "Cargando..." : `${usuarios.length} registros`}
+              {loadingUsuarios ? "Cargando..." : `${filteredUsuarios.length} registros`}
             </span>
           </div>
+
+          {/* Filtros */}
+          <div className="flex flex-col gap-3 border-b border-zentinel-gold-dark/10 px-6 py-4 sm:flex-row sm:items-center">
+            <div className="flex flex-1 overflow-hidden rounded-lg border border-zentinel-gold-dark/20">
+              <button
+                onClick={() => setSearchMode("nombre")}
+                className={`shrink-0 px-3 py-2 text-xs font-semibold transition-colors ${searchMode === "nombre" ? "bg-zentinel-gold/15 text-zentinel-gold" : "text-zentinel-text-muted hover:bg-white/5"}`}
+              >
+                Nombre
+              </button>
+              <button
+                onClick={() => setSearchMode("email")}
+                className={`shrink-0 border-l border-zentinel-gold-dark/20 px-3 py-2 text-xs font-semibold transition-colors ${searchMode === "email" ? "bg-zentinel-gold/15 text-zentinel-gold" : "text-zentinel-text-muted hover:bg-white/5"}`}
+              >
+                Email
+              </button>
+              <input
+                type="text"
+                placeholder={searchMode === "nombre" ? "Buscar por nombre…" : "Buscar por email…"}
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="min-w-0 flex-1 border-l border-zentinel-gold-dark/20 bg-zentinel-dark px-3 py-2 text-sm text-zentinel-text placeholder-zentinel-text-muted outline-none"
+              />
+            </div>
+            <select
+              value={searchEstado}
+              onChange={(e) => setSearchEstado(e.target.value as "" | "activa" | "suspendida")}
+              className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark px-3 py-2 text-sm text-zentinel-text outline-none transition-colors focus:border-zentinel-gold/50"
+            >
+              <option value="">Todos los estados</option>
+              <option value="activa">Activo</option>
+              <option value="suspendida">Suspendido</option>
+            </select>
+          </div>
+
           {errorUsuarios ? (
             <p className="px-6 py-4 text-sm text-red-400">{errorUsuarios}</p>
           ) : loadingUsuarios ? (
             <p className="px-6 py-6 text-sm text-zentinel-text-muted text-center">Cargando usuarios...</p>
+          ) : filteredUsuarios.length === 0 ? (
+            <p className="px-6 py-6 text-sm text-zentinel-text-muted text-center">No se encontraron usuarios.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -194,11 +382,13 @@ export default function Gestion() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zentinel-gold-dark/10">
-                  {usuarios.map((u) => (
-                    <tr key={u.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-3 font-medium text-zentinel-text">
-                        {u.nombre} {u.apellido}
-                      </td>
+                  {filteredUsuarios.map((u) => (
+                    <tr
+                      key={u.id}
+                      onClick={() => { setSelectedUser(u); setConfirmSuspend(false); }}
+                      className="cursor-pointer hover:bg-white/5 transition-colors"
+                    >
+                      <td className="px-6 py-3 font-medium text-zentinel-text">{u.nombre} {u.apellido}</td>
                       <td className="px-6 py-3 text-zentinel-text-muted">{u.email}</td>
                       <td className="px-6 py-3 text-center">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
