@@ -28,7 +28,7 @@ interface AuthContextValue {
   logout: () => void;
 }
 
-const AUTH_STORAGE_KEY = "zentinel-web-auth";
+export const AUTH_STORAGE_KEY = "zentinel-web-auth";
 
 let isAlerting = false; // Flag para deduplicar alertas
 
