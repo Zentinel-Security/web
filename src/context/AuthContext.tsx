@@ -12,6 +12,7 @@ import {
   type AuthUser,
   type LoginResponse,
 } from "../services/authService";
+import { UNAUTHORIZED_EVENT } from '../utils/apiFetch';
 
 interface AuthState {
   token: string;
@@ -28,7 +29,6 @@ interface AuthContextValue {
 }
 
 const AUTH_STORAGE_KEY = "zentinel-web-auth";
-import { UNAUTHORIZED_EVENT } from '../utils/apiFetch';
 
 let isAlerting = false; // Flag para deduplicar alertas
 
