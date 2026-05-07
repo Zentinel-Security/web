@@ -1,5 +1,6 @@
 import type { ReportDraft } from "../pages/Inicio/components/ReportForm";
 import { API_BASE_URL } from "../config/apiBaseUrl";
+import { apiFetch } from "../utils/apiFetch";
 
 interface CreateReportPayload {
   draft: ReportDraft;
@@ -26,7 +27,7 @@ export interface ReportStatusResponse {
 }
 
 export const createDeviceReport = async ({ draft, token }: CreateReportPayload) => {
-  const response = await fetch(`${API_BASE_URL}/reportes-dispositivo`, {
+  const response = await apiFetch(`${API_BASE_URL}/reportes-dispositivo`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -53,7 +54,7 @@ export const createDeviceReport = async ({ draft, token }: CreateReportPayload) 
 };
 
 export const getMyReportStatus = async (token: string): Promise<ReportStatusResponse> => {
-  const response = await fetch(`${API_BASE_URL}/reportes-dispositivo/mi-estado`, {
+  const response = await apiFetch(`${API_BASE_URL}/reportes-dispositivo/mi-estado`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -71,7 +72,7 @@ export const getMyReportStatus = async (token: string): Promise<ReportStatusResp
 };
 
 export const reactivateMyAccount = async (token: string): Promise<ReportStatusResponse> => {
-  const response = await fetch(`${API_BASE_URL}/reportes-dispositivo/reactivar-cuenta`, {
+  const response = await apiFetch(`${API_BASE_URL}/reportes-dispositivo/reactivar-cuenta`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
