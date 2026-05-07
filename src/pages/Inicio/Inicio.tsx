@@ -5,6 +5,7 @@ import type { ReportDraft } from "./components/ReportForm";
 import ReportSummaryModal from "./components/ReportSummaryModal";
 import LoginModal from "../../components/auth/LoginModal";
 import { useAuth } from "../../context/AuthContext";
+import { validateReportDraft } from "../../utils/reportValidations";
 import {
   createDeviceReport,
   getMyReportStatus,
@@ -14,8 +15,6 @@ import {
 
 const initialDraft: ReportDraft = {
   reportType: "Perdido",
-  phone: "",
-  email: "",
   description: "",
   includeLocation: false,
 };
@@ -62,6 +61,7 @@ export default function Inicio() {
 
   const handleReactivateAccount = async () => {
     if (!token) {
+      setFeedbackIsError(true);
       setFeedbackMessage("No se pudo reactivar la cuenta. Inicia sesión nuevamente.");
       return;
     }
@@ -88,6 +88,15 @@ export default function Inicio() {
 
   const handleSubmitReport = (report: ReportDraft) => {
     setFeedbackMessage("");
+    setFeedbackIsError(false);
+
+    // Validación del reporte antes de proceder
+    const { isValid, errors } = validateReportDraft(report);
+    if (!isValid) {
+      setFeedbackIsError(true);
+      setFeedbackMessage(Object.values(errors)[0] || "Revisa los datos del formulario.");
+      return;
+    }
 
     if (!isAuthenticated) {
       setPendingReport(report);
@@ -108,6 +117,7 @@ export default function Inicio() {
 
   const handleConfirmReport = async () => {
     if (!summaryReport || !token) {
+      setFeedbackIsError(true);
       setFeedbackMessage("No se pudo confirmar el reporte. Inicia sesión nuevamente.");
       setIsSummaryOpen(false);
       return;
@@ -122,18 +132,19 @@ export default function Inicio() {
       });
 
       setIsAccountSuspended(true);
-
       setIsSummaryOpen(false);
       setSummaryReport(null);
       setPendingReport(null);
       setDraft(initialDraft);
       setShowForm(false);
+
       try {
         const status = await getMyReportStatus(token);
         setLatestReport(status.ultimo_reporte);
       } catch {
         setLatestReport(null);
       }
+
       setFeedbackIsError(false);
       setFeedbackMessage("Reporte creado y cuenta suspendida correctamente.");
     } catch (error) {
@@ -161,6 +172,16 @@ export default function Inicio() {
         </p>
       </div>
 
+      {/* Notificaciones al tope para feedback inmediato */}
+      {feedbackMessage ? (
+        <div className={`mb-6 rounded-lg border p-4 text-sm ${feedbackIsError
+          ? "border-red-500/30 bg-red-950/30 text-red-300"
+          : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
+          }`}>
+          {feedbackMessage}
+        </div>
+      ) : null}
+
       <div className="mt-8">
         {isAuthenticated && isLoadingStatus ? (
           <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-8 text-center">
@@ -178,20 +199,62 @@ export default function Inicio() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
                   Último reporte enviado
                 </p>
-                <p className="mt-2 text-sm">
-                  <span className="font-semibold">Tipo:</span> {latestReport.tipo_reporte}
-                </p>
-                <p className="mt-1 text-sm">
-                  <span className="font-semibold">Estado:</span> {latestReport.estado_reporte}
-                </p>
-                <p className="mt-1 text-sm">
-                  <span className="font-semibold">Incluye ubicación:</span>{" "}
-                  {latestReport.incluye_ubicacion ? "Sí" : "No"}
-                </p>
-                <p className="mt-1 text-sm whitespace-pre-line">
-                  <span className="font-semibold">Descripción:</span>{" "}
-                  {latestReport.descripcion || "Sin descripción."}
-                </p>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <p className="text-sm">
+                    <span className="font-semibold text-white/80">Tipo:</span> {latestReport.tipo_reporte}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-semibold text-white/80">Estado:</span> {latestReport.estado_reporte}
+                  </p>
+                  <p className="text-sm col-span-full whitespace-pre-line">
+                    <span className="font-semibold text-white/80">Descripción:</span>{" "}
+                    {latestReport.descripcion || "Sin descripción."}
+                  </p>
+                </div>
+
+                {/* VISUALIZACIÓN DINÁMICA DE MAPA (REFACTOR UI) */}
+                {latestReport.incluye_ubicacion && latestReport.latitud && latestReport.longitud ? (
+                  <div className="mt-4 pt-4 border-t border-red-400/20">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold mb-2">
+                      Última Ubicación Detectada
+                    </p>
+                    <p className="text-sm text-red-100/70 mb-4">
+                      <span className="font-semibold text-white/80">Registrada el: </span>
+                      {latestReport.fecha_ubicacion ? new Date(latestReport.fecha_ubicacion).toLocaleString() : 'N/A'}
+                    </p>
+
+                    <div className="w-full h-56 sm:h-72 rounded-lg overflow-hidden border border-red-400/20 shadow-inner bg-black/30">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
+                        src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${latestReport.latitud},${latestReport.longitud}&zoom=16`}
+                      ></iframe>
+                    </div>
+
+                    <div className="mt-4 flex justify-end">
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${latestReport.latitud},${latestReport.longitud}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-zentinel-gold hover:text-white transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                        Abrir externamente
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 pt-4 border-t border-red-400/20">
+                    <p className="text-sm text-red-200/60">No se adjuntó ubicación en este reporte o el rastreo global falló.</p>
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -252,11 +315,10 @@ export default function Inicio() {
         )}
 
         {feedbackMessage ? (
-          <div className={`mt-6 rounded-lg border p-4 text-sm ${
-            feedbackIsError
+          <div className={`mt-6 rounded-lg border p-4 text-sm ${feedbackIsError
               ? "border-red-500/30 bg-red-950/30 text-red-300"
               : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
-          }`}>
+            }`}>
             {feedbackMessage}
           </div>
         ) : null}
