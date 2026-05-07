@@ -28,6 +28,9 @@ interface AuthContextValue {
 }
 
 const AUTH_STORAGE_KEY = "zentinel-web-auth";
+import { UNAUTHORIZED_EVENT } from '../utils/apiFetch';
+
+let isAlerting = false; // Flag para deduplicar alertas
 
 const getInitialAuthState = (): AuthState | null => {
   try {
@@ -71,8 +74,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 2. NUEVO: El "oído" que escucha a apiFetch
   useEffect(() => {
     const handleUnauthorized = () => {
-      console.warn("Sesión expirada o inválida. Cerrando sesión por seguridad.");
+      if (isAlerting) return;
+      isAlerting = true;
 
+      console.warn("Sesión expirada o inválida. Cerrando sesión por seguridad.");
       // 1. Cerramos la sesión en el estado
       logout();
 
@@ -81,13 +86,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 3. Lo expulsamos a la pantalla de inicio (útil si estaba metido en /gestion)
       window.location.hash = "/";
+
+      // 4. Liberamos el flag
+      setTimeout(() => { isAlerting = false; }, 2000);
     };
 
-    window.addEventListener("zentinel:unauthorized", handleUnauthorized);
-
-    return () => {
-      window.removeEventListener("zentinel:unauthorized", handleUnauthorized);
-    };
+    window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
   }, [logout]);
 
   const value = useMemo<AuthContextValue>(

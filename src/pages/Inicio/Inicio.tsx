@@ -19,6 +19,8 @@ const initialDraft: ReportDraft = {
   description: "",
   includeLocation: false,
 };
+import { AUTH_STORAGE_KEY } from "../../context/AuthContext";
+
 
 export default function Inicio() {
   const { isAuthenticated, token } = useAuth();
@@ -48,6 +50,10 @@ export default function Inicio() {
         setDraft(initialDraft); // Borra los datos oxidados del formulario
         setPendingReport(null);
         setShowForm(false); // Vuelve a mostrar el botón gigante principal
+
+        setIsLoginOpen(false);
+        setIsSummaryOpen(false);
+        setSummaryReport(null);
 
         return;
       }
@@ -113,7 +119,7 @@ export default function Inicio() {
     setIsLoginOpen(false);
 
     // 2. Obtenemos el token más reciente de forma síncrona desde localStorage
-    const stored = localStorage.getItem("zentinel-web-auth");
+    const stored = localStorage.getItem(AUTH_STORAGE_KEY);
     let currentToken = token;
     if (stored) {
       try {

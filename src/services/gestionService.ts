@@ -49,7 +49,7 @@ export const getReportesAdmin = async (
 };
 
 export const suspenderUsuario = async (token: string, idUsuario: number): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/usuarios/${idUsuario}/suspender`, {
+  const response = await apiFetch(`${API_BASE_URL}/usuarios/${idUsuario}/suspender`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -58,7 +58,7 @@ export const suspenderUsuario = async (token: string, idUsuario: number): Promis
 };
 
 export const reactivarUsuario = async (token: string, idUsuario: number): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/usuarios/${idUsuario}/reactivar`, {
+  const response = await apiFetch(`${API_BASE_URL}/usuarios/${idUsuario}/reactivar`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
   });
