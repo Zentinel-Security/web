@@ -19,11 +19,21 @@ const initialDraft: ReportDraft = {
   includeLocation: false,
 };
 
+// Utilidad para formatear la fecha a hora local (Argentina)
+const formatLocalTime = (dateString: string | null | undefined) => {
+  if (!dateString) return "No disponible";
+  return new Intl.DateTimeFormat("es-AR", {
+    timeZone: "America/Argentina/Cordoba",
+    dateStyle: "medium",
+    timeStyle: "medium",
+  }).format(new Date(dateString));
+};
+
 export default function Inicio() {
   const { isAuthenticated, token } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<ReportDraft>(initialDraft);
-  const [pendingReport, setPendingReport] = useState<ReportDraft | null>(null);
+  const [, setPendingReport] = useState<ReportDraft | null>(null);
   const [summaryReport, setSummaryReport] = useState<ReportDraft | null>(null);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -31,10 +41,25 @@ export default function Inicio() {
   const [isSavingReport, setIsSavingReport] = useState(false);
   const [isReactivatingAccount, setIsReactivatingAccount] = useState(false);
   const [isAccountSuspended, setIsAccountSuspended] = useState(false);
+  const [isAccountRecovered, setIsAccountRecovered] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(isAuthenticated);
   const [latestReport, setLatestReport] = useState<DeviceReport | null>(null);
   const [feedbackIsError, setFeedbackIsError] = useState(false);
 
+  // Limpieza total de estados al cerrar sesión
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setFeedbackMessage("");
+      setFeedbackIsError(false);
+      setPendingReport(null);
+      setSummaryReport(null);
+      setShowForm(false);
+      setDraft(initialDraft);
+      setIsAccountRecovered(false);
+    }
+  }, [isAuthenticated]);
+
+  // Sincronización robusta que atrapa reportes pendientes post-login
   useEffect(() => {
     const syncReportStatus = async () => {
       if (!isAuthenticated || !token) {
@@ -47,8 +72,29 @@ export default function Inicio() {
       setIsLoadingStatus(true);
       try {
         const status = await getMyReportStatus(token);
-        setIsAccountSuspended(status.estado_cuenta === "suspendida");
+        const isSuspended = status.estado_cuenta === "suspendida";
+
+        setIsAccountSuspended(isSuspended);
         setLatestReport(status.ultimo_reporte);
+
+        // Si el usuario acaba de loguearse y tenía un reporte en progreso...
+        setPendingReport((currentPending) => {
+          if (currentPending) {
+            if (isSuspended) {
+              // Si ya estaba suspendido, abortamos el formulario y avisamos
+              setFeedbackIsError(true);
+              setFeedbackMessage("Operación cancelada: Ya posees un reporte activo y tu cuenta está suspendida.");
+              setShowForm(false);
+            } else {
+              // Si todo está bien, le mostramos el modal para confirmar
+              setSummaryReport(currentPending);
+              setIsSummaryOpen(true);
+            }
+            return null; // Limpiamos el pendiente
+          }
+          return currentPending;
+        });
+
       } catch {
         setIsAccountSuspended(false);
       } finally {
@@ -70,17 +116,13 @@ export default function Inicio() {
 
     try {
       const status = await reactivateMyAccount(token);
-      setIsAccountSuspended(status.estado_cuenta === "suspendida");
+      setIsAccountSuspended(false); // Quitamos la tarjeta roja
       setLatestReport(status.ultimo_reporte);
-      setFeedbackIsError(false);
-      setFeedbackMessage("Cuenta reactivada correctamente.");
+      setFeedbackMessage(""); // Limpiamos el toast de arriba
+      setIsAccountRecovered(true); // Mostramos la tarjeta Verde
     } catch (error) {
       setFeedbackIsError(true);
-      if (error instanceof Error) {
-        setFeedbackMessage(error.message);
-      } else {
-        setFeedbackMessage("No se pudo reactivar la cuenta.");
-      }
+      setFeedbackMessage(error instanceof Error ? error.message : "No se pudo reactivar la cuenta.");
     } finally {
       setIsReactivatingAccount(false);
     }
@@ -89,6 +131,7 @@ export default function Inicio() {
   const handleSubmitReport = (report: ReportDraft) => {
     setFeedbackMessage("");
     setFeedbackIsError(false);
+    setIsAccountRecovered(false); // Limpiar vistas anteriores si intenta de nuevo
 
     // Validación del reporte antes de proceder
     const { isValid, errors } = validateReportDraft(report);
@@ -108,11 +151,11 @@ export default function Inicio() {
     setIsSummaryOpen(true);
   };
 
+  // Verificación estricta tras iniciar sesión
   const handleLoginSuccess = () => {
-    if (!pendingReport) return;
-    setSummaryReport(pendingReport);
-    setPendingReport(null);
-    setIsSummaryOpen(true);
+    // Solo cerramos el modal. El useEffect de arriba (syncReportStatus) 
+    // se encarga de manera determinista de procesar el pendingReport.
+    setIsLoginOpen(false);
   };
 
   const handleConfirmReport = async () => {
@@ -126,10 +169,7 @@ export default function Inicio() {
     setIsSavingReport(true);
 
     try {
-      await createDeviceReport({
-        draft: summaryReport,
-        token,
-      });
+      await createDeviceReport({ draft: summaryReport, token });
 
       setIsAccountSuspended(true);
       setIsSummaryOpen(false);
@@ -137,6 +177,7 @@ export default function Inicio() {
       setPendingReport(null);
       setDraft(initialDraft);
       setShowForm(false);
+      setIsAccountRecovered(false); // Asegurarnos de limpiar la vista verde
 
       try {
         const status = await getMyReportStatus(token);
@@ -149,32 +190,29 @@ export default function Inicio() {
       setFeedbackMessage("Reporte creado y cuenta suspendida correctamente.");
     } catch (error) {
       setFeedbackIsError(true);
-      if (error instanceof Error) {
-        setFeedbackMessage(error.message);
-      } else {
-        setFeedbackMessage("No se pudo guardar el reporte.");
-      }
+      setFeedbackMessage(error instanceof Error ? error.message : "No se pudo guardar el reporte.");
     } finally {
       setIsSavingReport(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-10 text-center sm:text-left">
-        <h1 className="text-3xl font-bold text-zentinel-gold sm:text-5xl mb-4 tracking-tight">
-          Centro de Reportes
-        </h1>
-        <p className="text-lg text-zentinel-text-muted max-w-2xl">
-          Si has perdido tu dispositivo con Zentinel instalado, es vital actuar
-          rápido. Reporta el incidente para iniciar inmediatamente los
-          protocolos de seguridad y rastreo.
-        </p>
-      </div>
+    <div className="max-w-3xl mx-auto pb-10">
+      {/* Ocultar encabezado genérico si hay pantalla de estado activa */}
+      {!isAccountSuspended && !isAccountRecovered && (
+        <div className="mb-10 text-center sm:text-left">
+          <h1 className="text-3xl font-bold text-zentinel-gold sm:text-5xl mb-4 tracking-tight">
+            Centro de Reportes
+          </h1>
+          <p className="text-lg text-zentinel-text-muted max-w-2xl">
+            Si has perdido tu dispositivo con Zentinel instalado, es vital actuar rápido. Reporta el incidente para iniciar inmediatamente los protocolos de seguridad y rastreo.
+          </p>
+        </div>
+      )}
 
-      {/* Notificaciones al tope para feedback inmediato */}
+      {/* Notificaciones al tope */}
       {feedbackMessage ? (
-        <div className={`mb-6 rounded-lg border p-4 text-sm ${feedbackIsError
+        <div className={`mb-8 rounded-lg border p-4 text-sm shadow-md animate-in fade-in slide-in-from-top-2 ${feedbackIsError
           ? "border-red-500/30 bg-red-950/30 text-red-300"
           : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
           }`}>
@@ -184,47 +222,78 @@ export default function Inicio() {
 
       <div className="mt-8">
         {isAuthenticated && isLoadingStatus ? (
-          <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-8 text-center">
+          <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-8 text-center animate-pulse">
             <p className="text-zentinel-text-muted text-sm">Verificando estado de la cuenta...</p>
           </div>
         ) : isAuthenticated && isAccountSuspended ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-950/30 p-6 text-red-100">
-            <h3 className="text-xl font-bold text-red-200">Cuenta suspendida</h3>
-            <p className="mt-2 text-sm text-red-100/90">
-              Tu cuenta se encuentra en estado suspendida por un reporte activo en estado creado.
-            </p>
 
-            {latestReport ? (
-              <div className="mt-4 rounded-lg border border-red-400/30 bg-black/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
-                  Último reporte enviado
-                </p>
+          /* UI CUENTA SUSPENDIDA (ROJA) */
+          <div className="overflow-hidden rounded-2xl border border-red-500/20 bg-zentinel-dark-secondary shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-red-950/20 p-6 sm:p-8 border-b border-red-500/10">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </div>
+                <h3 className="text-2xl font-bold text-red-200 tracking-tight">Cuenta Suspendida</h3>
+              </div>
+              <p className="text-sm text-red-200/60 ml-7">
+                Protocolo de seguridad activo. Operaciones restringidas por reporte de extravío.
+              </p>
+            </div>
 
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <p className="text-sm">
-                    <span className="font-semibold text-white/80">Tipo:</span> {latestReport.tipo_reporte}
-                  </p>
-                  <p className="text-sm">
-                    <span className="font-semibold text-white/80">Estado:</span> {latestReport.estado_reporte}
-                  </p>
-                  <p className="text-sm col-span-full whitespace-pre-line">
-                    <span className="font-semibold text-white/80">Descripción:</span>{" "}
-                    {latestReport.descripcion || "Sin descripción."}
-                  </p>
+            {latestReport && (
+              <div className="p-6 sm:p-8">
+                <div className="mb-6">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-zentinel-gold mb-4">
+                    Detalles del Incidente
+                  </h4>
+                  <div className="grid gap-y-4 gap-x-8 sm:grid-cols-2 bg-black/20 rounded-xl p-5 border border-white/5">
+                    <div>
+                      <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Evento Reportado</p>
+                      <p className="text-sm font-medium text-white">{latestReport.tipo_reporte}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Estado</p>
+                      {/* Formateo semántico */}
+                      <p className="text-sm font-medium text-red-400">
+                        {latestReport.estado_reporte === "creado" ? "Activo (En búsqueda)" : "Finalizado"}
+                      </p>
+                    </div>
+                    <div className="sm:col-span-2 pt-2 border-t border-white/5">
+                      <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Descripción</p>
+                      <p className="text-sm text-white/80 whitespace-pre-line italic">
+                        "{latestReport.descripcion || "Sin descripción proporcionada"}"
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* VISUALIZACIÓN DINÁMICA DE MAPA (REFACTOR UI) */}
                 {latestReport.incluye_ubicacion && latestReport.latitud && latestReport.longitud ? (
-                  <div className="mt-4 pt-4 border-t border-red-400/20">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold mb-2">
-                      Última Ubicación Detectada
-                    </p>
-                    <p className="text-sm text-red-100/70 mb-4">
-                      <span className="font-semibold text-white/80">Registrada el: </span>
-                      {latestReport.fecha_ubicacion ? new Date(latestReport.fecha_ubicacion).toLocaleString() : 'N/A'}
-                    </p>
+                  <div className="mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 gap-2">
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-zentinel-gold mb-1">
+                          Última Ubicación Conocida
+                        </h4>
+                        <p className="text-xs text-zentinel-text-muted">
+                          Registrada el: <span className="text-white/70">{formatLocalTime(latestReport.fecha_ubicacion)}</span>
+                        </p>
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${latestReport.latitud},${latestReport.longitud}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                        Abrir Externamente
+                      </a>
+                    </div>
 
-                    <div className="w-full h-56 sm:h-72 rounded-lg overflow-hidden border border-red-400/20 shadow-inner bg-black/30">
+                    <div className="w-full h-64 rounded-xl overflow-hidden border border-white/10 shadow-inner bg-black">
                       <iframe
                         width="100%"
                         height="100%"
@@ -235,39 +304,80 @@ export default function Inicio() {
                         src={`https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${latestReport.latitud},${latestReport.longitud}&zoom=16`}
                       ></iframe>
                     </div>
-
-                    <div className="mt-4 flex justify-end">
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${latestReport.latitud},${latestReport.longitud}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-zentinel-gold hover:text-white transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                        </svg>
-                        Abrir externamente
-                      </a>
-                    </div>
                   </div>
                 ) : (
-                  <div className="mt-4 pt-4 border-t border-red-400/20">
-                    <p className="text-sm text-red-200/60">No se adjuntó ubicación en este reporte o el rastreo global falló.</p>
+                  <div className="rounded-lg bg-black/20 border border-white/5 p-4 text-center">
+                    <p className="text-sm text-zentinel-text-muted italic">
+                      No se adjuntó ubicación en este reporte o el rastreo global falló.
+                    </p>
                   </div>
                 )}
               </div>
-            ) : null}
+            )}
 
-            <div className="mt-5">
+            <div className="bg-red-950/10 p-6 sm:px-8 border-t border-red-500/10 flex justify-center">
               <button
                 onClick={handleReactivateAccount}
                 disabled={isReactivatingAccount}
-                className="rounded-lg border border-zentinel-gold/60 bg-zentinel-gold/10 px-4 py-2 text-sm font-semibold text-zentinel-gold transition-colors hover:bg-zentinel-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border border-red-500/30 bg-red-500/10 px-6 py-2.5 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
               >
-                {isReactivatingAccount ? "Reactivando cuenta..." : "Reactivar cuenta"}
+                {isReactivatingAccount ? "Procesando..." : "Cancelar Reporte y Reactivar Cuenta"}
               </button>
             </div>
           </div>
+
+        ) : isAuthenticated && isAccountRecovered ? (
+
+          /* DETALLE 4: UI CUENTA REACTIVADA (VERDE) */
+          <div className="overflow-hidden rounded-2xl border border-emerald-500/20 bg-zentinel-dark-secondary shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-emerald-950/20 p-6 sm:p-8 border-b border-emerald-500/10">
+              <div className="flex items-center gap-4 mb-2">
+                <div className="relative flex h-3 w-3">
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </div>
+                <h3 className="text-2xl font-bold text-emerald-200 tracking-tight">Cuenta Reactivada</h3>
+              </div>
+              <p className="text-sm text-emerald-200/60 ml-7">
+                El protocolo de seguridad se ha desactivado con éxito. Tu dispositivo vuelve a operar con total normalidad.
+              </p>
+            </div>
+
+            {latestReport && (
+              <div className="p-6 sm:p-8">
+                <div className="mb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-zentinel-gold mb-4">
+                    Resumen del Incidente Finalizado
+                  </h4>
+                  <div className="grid gap-y-4 gap-x-8 sm:grid-cols-2 bg-black/20 rounded-xl p-5 border border-white/5">
+                    <div>
+                      <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Evento Reportado</p>
+                      <p className="text-sm font-medium text-white">{latestReport.tipo_reporte}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Estado</p>
+                      <p className="text-sm font-medium text-emerald-400">Resuelto (Finalizado)</p>
+                    </div>
+                    <div className="sm:col-span-2 pt-2 border-t border-white/5">
+                      <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Descripción Guardada</p>
+                      <p className="text-sm text-white/80 whitespace-pre-line italic">
+                        "{latestReport.descripcion || "Sin descripción proporcionada"}"
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="bg-emerald-950/10 p-6 sm:px-8 border-t border-emerald-500/10 flex justify-center">
+              <button
+                onClick={() => setIsAccountRecovered(false)}
+                className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-6 py-2.5 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 shadow-sm"
+              >
+                Volver al Centro de Reportes
+              </button>
+            </div>
+          </div>
+
         ) : !showForm ? (
           /* Estado inicial: Botón grande de llamada a la acción - también para usuarios no autenticados */
           <button
@@ -295,8 +405,7 @@ export default function Inicio() {
                 Denunciar Dispositivo Extraviado
               </h2>
               <p className="text-zentinel-text-muted">
-                Haz clic aquí para comenzar el proceso de reporte y bloqueo
-                preventivo.
+                Haz clic aquí para comenzar el proceso de reporte y bloqueo preventivo.
               </p>
             </div>
           </button>
@@ -313,15 +422,6 @@ export default function Inicio() {
             onSubmitReport={handleSubmitReport}
           />
         )}
-
-        {feedbackMessage ? (
-          <div className={`mt-6 rounded-lg border p-4 text-sm ${feedbackIsError
-              ? "border-red-500/30 bg-red-950/30 text-red-300"
-              : "border-emerald-500/30 bg-emerald-950/30 text-emerald-200"
-            }`}>
-            {feedbackMessage}
-          </div>
-        ) : null}
       </div>
 
       <LoginModal
