@@ -3,6 +3,8 @@ import {
   useContext,
   useMemo,
   useState,
+  useEffect,
+  useCallback,
   type ReactNode,
 } from "react";
 import {
@@ -10,6 +12,7 @@ import {
   type AuthUser,
   type LoginResponse,
 } from "../services/authService";
+import { UNAUTHORIZED_EVENT } from '../utils/apiFetch';
 
 interface AuthState {
   token: string;
@@ -25,7 +28,9 @@ interface AuthContextValue {
   logout: () => void;
 }
 
-const AUTH_STORAGE_KEY = "zentinel-web-auth";
+export const AUTH_STORAGE_KEY = "zentinel-web-auth";
+
+let isAlerting = false; // Flag para deduplicar alertas
 
 const getInitialAuthState = (): AuthState | null => {
   try {
@@ -60,10 +65,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthState(nextState);
   };
 
-  const logout = () => {
+  // 1. Envolvemos logout en useCallback para estabilizar la función
+  const logout = useCallback(() => {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setAuthState(null);
-  };
+  }, []);
+
+  // 2. NUEVO: El "oído" que escucha a apiFetch
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      if (isAlerting) return;
+      isAlerting = true;
+
+      console.warn("Sesión expirada o inválida. Cerrando sesión por seguridad.");
+      // 1. Cerramos la sesión en el estado
+      logout();
+
+      // 2. Feedback visual inmediato para el usuario
+      alert("Tu sesión ha expirado por inactividad o seguridad. Por favor, vuelve a iniciar sesión.");
+
+      // 3. Lo expulsamos a la pantalla de inicio (útil si estaba metido en /gestion)
+      window.location.hash = "/";
+
+      // 4. Liberamos el flag
+      setTimeout(() => { isAlerting = false; }, 2000);
+    };
+
+    window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+  }, [logout]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -73,12 +103,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login,
       logout,
     }),
-    [authState],
+    [authState, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
 

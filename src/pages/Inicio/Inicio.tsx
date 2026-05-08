@@ -66,6 +66,17 @@ export default function Inicio() {
         setIsAccountSuspended(false);
         setIsLoadingStatus(false);
         setLatestReport(null);
+
+        setFeedbackMessage("");
+        setFeedbackIsError(false);
+        setDraft(initialDraft); // Borra los datos oxidados del formulario
+        setPendingReport(null);
+        setShowForm(false); // Vuelve a mostrar el botón gigante principal
+
+        setIsLoginOpen(false);
+        setIsSummaryOpen(false);
+        setSummaryReport(null);
+
         return;
       }
 
