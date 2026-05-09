@@ -259,10 +259,10 @@ export default function Inicio() {
                   <h4 className="text-xs font-bold uppercase tracking-widest text-zentinel-gold mb-4">
                     Detalles del Incidente
                   </h4>
-                  <div className="grid gap-y-4 gap-x-8 sm:grid-cols-2 bg-black/20 rounded-xl p-5 border border-white/5">
+                  <div className="grid gap-y-4 gap-x-8 sm:grid-cols-2 bg-zentinel-text/5 rounded-xl p-5 border border-zentinel-text/5">
                     <div>
                       <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Evento Reportado</p>
-                      <p className="text-sm font-medium text-white">{latestReport.tipo_reporte}</p>
+                      <p className="text-sm font-medium text-zentinel-text">{latestReport.tipo_reporte}</p>
                     </div>
                     <div>
                       <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Estado</p>
@@ -271,9 +271,9 @@ export default function Inicio() {
                         {latestReport.estado_reporte === "creado" ? "Activo (En búsqueda)" : "Finalizado"}
                       </p>
                     </div>
-                    <div className="sm:col-span-2 pt-2 border-t border-white/5">
+                    <div className="sm:col-span-2 pt-2 border-t border-zentinel-text/10">
                       <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Descripción</p>
-                      <p className="text-sm text-white/80 whitespace-pre-line italic">
+                      <p className="text-sm text-zentinel-text/80 whitespace-pre-line italic">
                         "{latestReport.descripcion || "Sin descripción proporcionada"}"
                       </p>
                     </div>
@@ -288,7 +288,7 @@ export default function Inicio() {
                           Última Ubicación Conocida
                         </h4>
                         <p className="text-xs text-zentinel-text-muted">
-                          Registrada el: <span className="text-white/70">{formatLocalTime(latestReport.fecha_ubicacion)}</span>
+                          Registrada el: <span className="text-zentinel-text/70">{formatLocalTime(latestReport.fecha_ubicacion)}</span>
                         </p>
                       </div>
                       <a
@@ -304,7 +304,7 @@ export default function Inicio() {
                       </a>
                     </div>
 
-                    <div className="w-full h-64 rounded-xl overflow-hidden border border-white/10 shadow-inner bg-black">
+                    <div className="w-full h-64 rounded-xl overflow-hidden border border-zentinel-text/10 shadow-inner bg-zentinel-dark-secondary">
                       <iframe
                         width="100%"
                         height="100%"
@@ -317,7 +317,7 @@ export default function Inicio() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-lg bg-black/20 border border-white/5 p-4 text-center">
+                  <div className="rounded-lg bg-zentinel-text/5 border border-zentinel-text/5 p-4 text-center">
                     <p className="text-sm text-zentinel-text-muted italic">
                       No se adjuntó ubicación en este reporte o el rastreo global falló.
                     </p>
@@ -359,18 +359,18 @@ export default function Inicio() {
                   <h4 className="text-xs font-bold uppercase tracking-widest text-zentinel-gold mb-4">
                     Resumen del Incidente Finalizado
                   </h4>
-                  <div className="grid gap-y-4 gap-x-8 sm:grid-cols-2 bg-black/20 rounded-xl p-5 border border-white/5">
+                  <div className="grid gap-y-4 gap-x-8 sm:grid-cols-2 bg-zentinel-text/5 rounded-xl p-5 border border-zentinel-text/5">
                     <div>
                       <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Evento Reportado</p>
-                      <p className="text-sm font-medium text-white">{latestReport.tipo_reporte}</p>
+                      <p className="text-sm font-medium text-zentinel-text">{latestReport.tipo_reporte}</p>
                     </div>
                     <div>
                       <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Estado</p>
                       <p className="text-sm font-medium text-emerald-400">Resuelto (Finalizado)</p>
                     </div>
-                    <div className="sm:col-span-2 pt-2 border-t border-white/5">
+                    <div className="sm:col-span-2 pt-2 border-t border-zentinel-text/10">
                       <p className="text-[11px] uppercase text-zentinel-text-muted mb-1">Descripción Guardada</p>
-                      <p className="text-sm text-white/80 whitespace-pre-line italic">
+                      <p className="text-sm text-zentinel-text/80 whitespace-pre-line italic">
                         "{latestReport.descripcion || "Sin descripción proporcionada"}"
                       </p>
                     </div>
@@ -393,7 +393,7 @@ export default function Inicio() {
           /* Estado inicial: Botón grande de llamada a la acción - también para usuarios no autenticados */
           <button
             onClick={() => setShowForm(true)}
-            className="group w-full sm:w-auto flex flex-col items-center sm:flex-row gap-6 bg-zentinel-dark-secondary hover:bg-zentinel-dark-secondary/80 border-2 border-zentinel-gold p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.3)] hover:scale-[1.02] cursor-pointer text-left"
+            className="group w-full sm:w-auto flex flex-col items-center sm:flex-row gap-6 bg-zentinel-dark-secondary hover:bg-zentinel-dark-secondary/80 border-2 border-zentinel-gold/60 p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(251,191,36,0.25)] hover:scale-[1.02] cursor-pointer text-left"
           >
             <div className="bg-zentinel-gold/10 p-4 rounded-full border border-zentinel-gold/30 group-hover:bg-zentinel-gold/20 transition-colors">
               <svg
@@ -412,7 +412,7 @@ export default function Inicio() {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-zentinel-gold transition-colors">
+              <h2 className="text-2xl font-bold text-zentinel-text mb-2 group-hover:text-zentinel-gold transition-colors">
                 Denunciar Dispositivo Extraviado
               </h2>
               <p className="text-zentinel-text-muted">

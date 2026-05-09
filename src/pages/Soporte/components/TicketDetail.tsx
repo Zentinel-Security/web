@@ -74,12 +74,12 @@ export default function TicketDetail({ ticketId, token, onClose }: TicketDetailP
   const content = (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-zentinel-text/20 backdrop-blur-md dark:bg-black/60"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-2xl rounded-xl border border-zentinel-gold-dark/40 bg-zentinel-dark-secondary shadow-2xl shadow-black/60 flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-zentinel-gold/30 bg-zentinel-dark-secondary flex flex-col max-h-[90vh]" style={{boxShadow: '0 20px 60px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--color-zentinel-gold) 20%, transparent)'}}>
         {/* Header */}
         <div className="flex items-start justify-between border-b border-zentinel-gold-dark/20 px-6 py-4 shrink-0">
           <div className="min-w-0 pr-4">
@@ -93,7 +93,7 @@ export default function TicketDetail({ ticketId, token, onClose }: TicketDetailP
                     {ticket.estado.replace("_", " ")}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-white truncate">{ticket.asunto}</h2>
+                <h2 className="text-lg font-bold text-zentinel-text truncate">{ticket.asunto}</h2>
                 <p className="text-xs text-zentinel-text-muted mt-0.5">
                   {new Date(ticket.fecha_creacion).toLocaleDateString("es-AR", {
                     day: "2-digit", month: "2-digit", year: "numeric",
@@ -105,7 +105,7 @@ export default function TicketDetail({ ticketId, token, onClose }: TicketDetailP
           </div>
           <button
             onClick={onClose}
-            className="shrink-0 rounded-md p-1.5 text-zentinel-text-muted hover:bg-white/10 hover:text-white transition-colors"
+            className="shrink-0 rounded-md p-1.5 text-zentinel-text-muted hover:bg-zentinel-text/10 hover:text-zentinel-text transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -209,7 +209,7 @@ function MessageBubble({ mensaje, esAdmin, nombre, fecha, isOriginal }: MessageB
           esAdmin
             ? "bg-zentinel-gold/10 border border-zentinel-gold/20 text-zentinel-text"
             : isOriginal
-            ? "bg-white/5 border border-zentinel-gold-dark/20 text-zentinel-text"
+            ? "bg-zentinel-text/5 border border-zentinel-gold-dark/20 text-zentinel-text"
             : "bg-zentinel-gold/15 border border-zentinel-gold/30 text-zentinel-text"
         }`}
       >

@@ -78,14 +78,14 @@ export default function LoginModal({
   const modalContent = (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-zentinel-text/20 backdrop-blur-md dark:bg-black/60"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-md rounded-xl border border-zentinel-gold-dark/40 bg-zentinel-dark-secondary p-6 shadow-2xl shadow-black/60">
+      <div className="relative w-full max-w-md rounded-2xl border border-zentinel-gold/30 bg-zentinel-dark-secondary p-6 shadow-2xl shadow-black/40" style={{boxShadow: '0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px color-mix(in srgb, var(--color-zentinel-gold) 20%, transparent)'}}>
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <h2 className="text-2xl font-bold text-zentinel-text">{title}</h2>
           <p className="mt-1 text-sm text-zentinel-text-muted">{subtitle}</p>
         </div>
 
@@ -138,7 +138,7 @@ export default function LoginModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-zentinel-gold-dark/30 px-4 py-2 text-sm font-medium text-zentinel-text-muted transition-colors hover:bg-white/5"
+              className="rounded-md border border-zentinel-gold-dark/30 px-4 py-2 text-sm font-medium text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5"
               disabled={isSubmitting}
             >
               Cancelar

@@ -77,7 +77,7 @@ export default function Soporte() {
 
         <button
           onClick={() => setIsLoginOpen(true)}
-          className="group w-full sm:w-auto flex flex-col items-center sm:flex-row gap-6 bg-zentinel-dark-secondary hover:bg-zentinel-dark-secondary/80 border-2 border-zentinel-gold p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.3)] hover:scale-[1.02] cursor-pointer text-left"
+          className="group w-full sm:w-auto flex flex-col items-center sm:flex-row gap-6 bg-zentinel-dark-secondary hover:bg-zentinel-dark-secondary/80 border-2 border-zentinel-gold/60 p-8 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_-5px_rgba(251,191,36,0.25)] hover:scale-[1.02] cursor-pointer text-left"
         >
           <div className="bg-zentinel-gold/10 p-4 rounded-full border border-zentinel-gold/30 group-hover:bg-zentinel-gold/20 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-zentinel-gold">
@@ -85,7 +85,7 @@ export default function Soporte() {
             </svg>
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2 group-hover:text-zentinel-gold transition-colors">
+            <h2 className="text-2xl font-bold text-zentinel-text mb-2 group-hover:text-zentinel-gold transition-colors">
               Iniciar sesión para abrir un ticket
             </h2>
             <p className="text-zentinel-text-muted">
@@ -175,14 +175,14 @@ export default function Soporte() {
               <button
                 key={t.id}
                 onClick={() => setSelectedTicketId(t.id)}
-                className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors text-left"
+                className="w-full flex items-center justify-between px-6 py-4 hover:bg-zentinel-text/5 transition-colors text-left"
               >
                 <div className="min-w-0 pr-4">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-xs text-zentinel-text-muted">
                       #{t.id}
                     </span>
-                    <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-zentinel-text-muted">
+                    <span className="rounded-full bg-zentinel-text/5 px-2 py-0.5 text-xs text-zentinel-text-muted">
                       {TIPO_LABELS[t.tipo]}
                     </span>
                   </div>

@@ -184,7 +184,7 @@ export default function Gestion() {
     `px-4 py-2 text-sm font-medium transition-colors rounded-md ${
       activeTab === tab
         ? "bg-zentinel-gold/10 text-zentinel-gold border border-zentinel-gold/20 font-bold"
-        : "text-zentinel-text-muted hover:text-zentinel-gold-light hover:bg-white/5"
+        : "text-zentinel-text-muted hover:text-zentinel-gold-light hover:bg-zentinel-text/5"
     }`;
 
   // ─── Derived ──────────────────────────────────────────────
@@ -239,7 +239,7 @@ export default function Gestion() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Rol</p>
-                <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${selectedUser.id_rol === 2 ? "bg-zentinel-gold/15 text-zentinel-gold" : "bg-white/5 text-zentinel-text-muted"}`}>
+                <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${selectedUser.id_rol === 2 ? "bg-zentinel-gold/15 text-zentinel-gold" : "bg-zentinel-text/5 text-zentinel-text-muted"}`}>
                   {selectedUser.rol_descripcion ?? "usuario"}
                 </span>
               </div>
@@ -260,7 +260,7 @@ export default function Gestion() {
             <div className="mt-6 flex justify-end gap-3">
               {confirmSuspend ? (
                 <>
-                  <button onClick={() => setConfirmSuspend(false)} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-white/5 disabled:opacity-50">
+                  <button onClick={() => setConfirmSuspend(false)} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5 disabled:opacity-50">
                     Cancelar
                   </button>
                   <button onClick={handleSuspend} disabled={actionLoading} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50">
@@ -269,7 +269,7 @@ export default function Gestion() {
                 </>
               ) : (
                 <>
-                  <button onClick={closeModal} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-white/5">
+                  <button onClick={closeModal} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5">
                     Cerrar
                   </button>
                   {selectedUser.activo ? (
@@ -298,7 +298,7 @@ export default function Gestion() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { label: "Usuarios",          value: totalUsuarios   || "—", color: "text-white" },
+          { label: "Usuarios",          value: totalUsuarios   || "—", color: "text-zentinel-text" },
           { label: "Suspendidos",        value: suspendidos     || "—", color: "text-red-400" },
           { label: "Reportes activos",   value: reportesActivos || "—", color: "text-amber-400" },
           { label: "Tickets abiertos",   value: ticketsAbiertos || "—", color: "text-zentinel-gold" },
@@ -335,13 +335,13 @@ export default function Gestion() {
             <div className="flex flex-1 overflow-hidden rounded-lg border border-zentinel-gold-dark/20">
               <button
                 onClick={() => setSearchMode("nombre")}
-                className={`shrink-0 px-3 py-2 text-xs font-semibold transition-colors ${searchMode === "nombre" ? "bg-zentinel-gold/15 text-zentinel-gold" : "text-zentinel-text-muted hover:bg-white/5"}`}
+                className={`shrink-0 px-3 py-2 text-xs font-semibold transition-colors ${searchMode === "nombre" ? "bg-zentinel-gold/15 text-zentinel-gold" : "text-zentinel-text-muted hover:bg-zentinel-text/5"}`}
               >
                 Nombre
               </button>
               <button
                 onClick={() => setSearchMode("email")}
-                className={`shrink-0 border-l border-zentinel-gold-dark/20 px-3 py-2 text-xs font-semibold transition-colors ${searchMode === "email" ? "bg-zentinel-gold/15 text-zentinel-gold" : "text-zentinel-text-muted hover:bg-white/5"}`}
+                className={`shrink-0 border-l border-zentinel-gold-dark/20 px-3 py-2 text-xs font-semibold transition-colors ${searchMode === "email" ? "bg-zentinel-gold/15 text-zentinel-gold" : "text-zentinel-text-muted hover:bg-zentinel-text/5"}`}
               >
                 Email
               </button>
@@ -386,7 +386,7 @@ export default function Gestion() {
                     <tr
                       key={u.id}
                       onClick={() => { setSelectedUser(u); setConfirmSuspend(false); }}
-                      className="cursor-pointer hover:bg-white/5 transition-colors"
+                      className="cursor-pointer hover:bg-zentinel-text/5 transition-colors"
                     >
                       <td className="px-6 py-3 font-medium text-zentinel-text">{u.nombre} {u.apellido}</td>
                       <td className="px-6 py-3 text-zentinel-text-muted">{u.email}</td>
@@ -394,7 +394,7 @@ export default function Gestion() {
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           u.id_rol === 2
                             ? "bg-zentinel-gold/15 text-zentinel-gold"
-                            : "bg-white/5 text-zentinel-text-muted"
+                            : "bg-zentinel-text/5 text-zentinel-text-muted"
                         }`}>
                           {u.rol_descripcion ?? "usuario"}
                         </span>
@@ -432,7 +432,7 @@ export default function Gestion() {
                 <p className="px-6 py-6 text-sm text-zentinel-text-muted text-center">Sin reportes.</p>
               ) : (
                 reportes.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors">
+                  <div key={r.id} className="flex items-center justify-between px-6 py-4 hover:bg-zentinel-text/5 transition-colors">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-zentinel-text">
                         {r.tipo_reporte} — {r.nombre} {r.apellido}
@@ -527,7 +527,7 @@ export default function Gestion() {
                       <tr
                         key={t.id}
                         onClick={() => setSelectedTicketId(t.id)}
-                        className="hover:bg-white/5 transition-colors cursor-pointer"
+                        className="hover:bg-zentinel-text/5 transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-3 text-zentinel-text-muted">{t.id}</td>
                         <td className="px-6 py-3">
@@ -538,7 +538,7 @@ export default function Gestion() {
                           <p className="text-zentinel-text truncate">{t.asunto}</p>
                         </td>
                         <td className="px-6 py-3 text-center">
-                          <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs text-zentinel-text-muted">
+                          <span className="rounded-full bg-zentinel-text/5 px-2.5 py-0.5 text-xs text-zentinel-text-muted">
                             {TIPO_LABELS[t.tipo]}
                           </span>
                         </td>
