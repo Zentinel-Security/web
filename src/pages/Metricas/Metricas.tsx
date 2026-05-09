@@ -1,125 +1,381 @@
-// src/pages/Metricas/Metricas.tsx
+import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { fetchMetricas, type MetricasData } from "../../services/metricasService";
 
-const kpis = [
-  { label: "Usuarios Registrados", value: "2,847", delta: "+8%", deltaUp: true, sub: "vs mes anterior" },
-  { label: "Dispositivos Activos", value: "1,245", delta: "+12%", deltaUp: true, sub: "vs mes anterior" },
-  { label: "Alertas Hoy", value: "23", delta: "5 pendientes", deltaUp: false, sub: "requieren atención" },
-  { label: "Reportes de Robo (mes)", value: "41", delta: "-3%", deltaUp: false, sub: "vs mes anterior" },
-  { label: "Grupos Activos", value: "318", delta: "+5%", deltaUp: true, sub: "vs mes anterior" },
-  { label: "Uptime Servidor", value: "99.9%", delta: "Estable", deltaUp: true, sub: "sin incidentes" },
-];
+const IconUsers = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+  </svg>
+);
+const IconGroup = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+  </svg>
+);
+const IconMembers = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+  </svg>
+);
+const IconShield = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.25-8.25-3.286Z" />
+  </svg>
+);
+const IconZone = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+  </svg>
+);
+const IconBell = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+  </svg>
+);
+const IconPanic = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+  </svg>
+);
 
-const recentAlerts = [
-  { id: 1, usuario: "lucas.m@gmail.com", tipo: "Dispositivo robado", fecha: "Hoy 14:23", estado: "Pendiente" },
-  { id: 2, usuario: "sofia.r@outlook.com", tipo: "SOS activado", fecha: "Hoy 13:05", estado: "Atendido" },
-  { id: 3, usuario: "carlos.b@zentinel.app", tipo: "Zona insegura", fecha: "Hoy 11:48", estado: "Atendido" },
-  { id: 4, usuario: "maria.g@gmail.com", tipo: "Dispositivo robado", fecha: "Ayer 22:10", estado: "Pendiente" },
-  { id: 5, usuario: "juan.p@hotmail.com", tipo: "Batería crítica", fecha: "Ayer 18:33", estado: "Atendido" },
-];
+const PLAN_COLORS: Record<string, string> = {
+  gratuito: "#6b7280",
+  premium: "#3b82f6",
+  premium_plus: "#fbbf24",
+};
 
-const activityByDay = [
-  { dia: "Lun", alertas: 12, reportes: 4 },
-  { dia: "Mar", alertas: 8, reportes: 2 },
-  { dia: "Mié", alertas: 19, reportes: 7 },
-  { dia: "Jue", alertas: 5, reportes: 1 },
-  { dia: "Vie", alertas: 23, reportes: 8 },
-  { dia: "Sáb", alertas: 14, reportes: 3 },
-  { dia: "Dom", alertas: 9, reportes: 2 },
-];
+const PLAN_LABELS: Record<string, string> = {
+  gratuito: "Gratuito",
+  premium: "Premium",
+  premium_plus: "Premium Plus",
+};
 
-const maxAlertas = Math.max(...activityByDay.map((d) => d.alertas));
+function PieChart({ data }: { data: { plan: string; cantidad: number }[] }) {
+  const total = data.reduce((acc, d) => acc + d.cantidad, 0);
+  if (total === 0) {
+    return (
+      <div className="flex h-40 w-40 items-center justify-center rounded-full border-4 border-zentinel-gold-dark/20">
+        <span className="text-xs text-zentinel-text-muted">Sin datos</span>
+      </div>
+    );
+  }
+
+  let cumulative = 0;
+  const slices = data.map((d) => {
+    const pct = d.cantidad / total;
+    const start = cumulative;
+    cumulative += pct;
+    return { ...d, start, end: cumulative, pct };
+  });
+
+  const toXY = (pct: number, r: number) => {
+    const angle = pct * 2 * Math.PI - Math.PI / 2;
+    return { x: 50 + r * Math.cos(angle), y: 50 + r * Math.sin(angle) };
+  };
+
+  return (
+    <svg viewBox="0 0 100 100" className="h-40 w-40">
+      {slices.map((s) => {
+        if (s.pct === 0) return null;
+        const r = 40;
+        // Edge case: si un plan tiene el 100% de usuarios el arco es degenerado → dibujamos círculo completo
+        if (s.pct >= 0.9999) {
+          return (
+            <circle
+              key={s.plan}
+              cx="50" cy="50" r={r}
+              fill={PLAN_COLORS[s.plan] ?? "#6b7280"}
+              opacity={0.85}
+            />
+          );
+        }
+        const s1 = toXY(s.start, r);
+        const s2 = toXY(s.end, r);
+        const largeArc = s.pct > 0.5 ? 1 : 0;
+        const path = [
+          `M 50 50`,
+          `L ${s1.x} ${s1.y}`,
+          `A ${r} ${r} 0 ${largeArc} 1 ${s2.x} ${s2.y}`,
+          `Z`,
+        ].join(" ");
+        return (
+          <path
+            key={s.plan}
+            d={path}
+            fill={PLAN_COLORS[s.plan] ?? "#6b7280"}
+            opacity={0.85}
+          />
+        );
+      })}
+      <circle cx="50" cy="50" r="22" fill="var(--color-zentinel-dark-secondary)" />
+      <text x="50" y="47" textAnchor="middle" fontSize="10" fill="var(--color-zentinel-text)" fontWeight="bold">
+        {total}
+      </text>
+      <text x="50" y="57" textAnchor="middle" fontSize="6" fill="var(--color-zentinel-text-muted)">
+        usuarios
+      </text>
+    </svg>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  sub,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  sub: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">
+          {label}
+        </p>
+        <span className="text-zentinel-gold opacity-70">{icon}</span>
+      </div>
+      <p className="text-4xl font-extrabold text-zentinel-text leading-none">{value}</p>
+      <p className="text-xs text-zentinel-text-muted">{sub}</p>
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-5 space-y-3">
+      <div className="h-3 w-2/3 rounded bg-zentinel-gold-dark/20" />
+      <div className="h-9 w-1/2 rounded bg-zentinel-gold-dark/15" />
+      <div className="h-2 w-3/4 rounded bg-zentinel-gold-dark/10" />
+    </div>
+  );
+}
 
 export default function Metricas() {
+  const { token } = useAuth();
+  const [data, setData] = useState<MetricasData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatedAt] = useState(() =>
+    new Date().toLocaleString("es-AR", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    })
+  );
+
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    fetchMetricas(token)
+      .then(setData)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [token]);
+
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold text-zentinel-gold">Métricas del Sistema</h1>
-        <p className="mt-2 text-zentinel-text-muted">
-          Panel de control — datos actualizados al{" "}
-          <span className="text-zentinel-gold-light">08/04/2026 16:45</span>
+        <p className="mt-1 text-zentinel-text-muted text-sm">
+          Panel de control · datos al{" "}
+          <span className="text-zentinel-gold">{updatedAt}</span>
         </p>
       </header>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-5 shadow-lg shadow-black/20"
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">
-              {k.label}
-            </p>
-            <p className="mt-2 text-4xl font-bold text-zentinel-text">{k.value}</p>
-            <div className="mt-3 flex items-center gap-1 text-sm">
-              <span className={k.deltaUp ? "text-green-400" : "text-amber-400"}>
-                {k.deltaUp ? "↑" : "↓"} {k.delta}
-              </span>
-              <span className="text-zentinel-text-muted">{k.sub}</span>
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+          Error al cargar métricas: {error}
+        </div>
+      )}
+
+      {/* Fila 1 — Red y adopción */}
+      <section>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zentinel-text-muted">
+          Red y adopción
+        </p>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : data ? (
+            <>
+              <KpiCard
+                label="Usuarios activos"
+                value={data.usuarios.activos}
+                sub={`de ${data.usuarios.total} registrados`}
+                icon={<IconUsers />}
+              />
+              <KpiCard
+                label="Grupos / usuario"
+                value={data.grupos.promedio_por_usuario.toFixed(2)}
+                sub="promedio de grupos creados"
+                icon={<IconGroup />}
+              />
+              <KpiCard
+                label="Integrantes / grupo"
+                value={data.grupos.promedio_integrantes.toFixed(2)}
+                sub="promedio de miembros por grupo"
+                icon={<IconMembers />}
+              />
+              <KpiCard
+                label="Zentinelas / usuario"
+                value={data.zentinelas.promedio_por_usuario.toFixed(2)}
+                sub="promedio de contactos de confianza"
+                icon={<IconShield />}
+              />
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      {/* Fila 2 — Actividad del producto */}
+      <section>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zentinel-text-muted">
+          Actividad del producto
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : data ? (
+            <>
+              <KpiCard
+                label="Zonas seguras configuradas"
+                value={data.zonas.activas}
+                sub="total activas en el sistema"
+                icon={<IconZone />}
+              />
+              <KpiCard
+                label="Alertas de zona (mes)"
+                value={data.alertas.zona_mes}
+                sub="entradas y salidas registradas este mes"
+                icon={<IconBell />}
+              />
+              <KpiCard
+                label="Alertas de pánico (mes)"
+                value={data.alertas.panico_mes}
+                sub="activaciones del botón SOS este mes"
+                icon={<IconPanic />}
+              />
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      {/* Fila 3 — Monetización + Soporte */}
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Torta de planes */}
+        <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-6">
+          <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-zentinel-gold">
+            Distribución de planes
+          </p>
+          {loading ? (
+            <div className="flex items-center gap-8">
+              <div className="h-40 w-40 animate-pulse rounded-full bg-zentinel-gold-dark/15" />
+              <div className="space-y-3 flex-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-zentinel-gold-dark/20 animate-pulse" />
+                    <div className="h-3 flex-1 rounded bg-zentinel-gold-dark/15 animate-pulse" />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        {/* Actividad semanal */}
-        <div className="lg:col-span-2 rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-6 shadow-lg shadow-black/20">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zentinel-gold">
-            Actividad — Últimos 7 días
-          </h2>
-          <div className="flex items-end justify-between gap-2 h-28">
-            {activityByDay.map((d) => (
-              <div key={d.dia} className="flex flex-1 flex-col items-center gap-1">
-                <div className="flex w-full flex-col items-center gap-0.5">
-                  <div
-                    className="w-full rounded-t bg-zentinel-gold/60"
-                    style={{ height: `${(d.alertas / maxAlertas) * 80}px` }}
-                    title={`${d.alertas} alertas`}
-                  />
-                  <div
-                    className="w-full rounded-t bg-red-500/50"
-                    style={{ height: `${(d.reportes / maxAlertas) * 80}px` }}
-                    title={`${d.reportes} reportes`}
-                  />
+          ) : data ? (
+            (() => {
+              const totalPlanes = data.planes.reduce((a, b) => a + b.cantidad, 0);
+              const pagos = data.planes
+                .filter((p) => p.plan !== "gratuito")
+                .reduce((a, b) => a + b.cantidad, 0);
+              const conversionRate = totalPlanes > 0 ? ((pagos / totalPlanes) * 100).toFixed(1) : "0";
+              return (
+                <div className="space-y-5">
+                  <div className="flex flex-col sm:flex-row items-center gap-8">
+                    <PieChart data={data.planes} />
+                    <ul className="space-y-3 w-full">
+                      {data.planes.map((p) => {
+                        const pct = totalPlanes > 0 ? ((p.cantidad / totalPlanes) * 100).toFixed(1) : "0";
+                        return (
+                          <li key={p.plan} className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className="h-3 w-3 flex-shrink-0 rounded-full"
+                                style={{ backgroundColor: PLAN_COLORS[p.plan] ?? "#6b7280" }}
+                              />
+                              <span className="text-sm text-zentinel-text truncate">
+                                {PLAN_LABELS[p.plan] ?? p.plan}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="text-sm font-bold text-zentinel-text">{p.cantidad}</span>
+                              <span className="text-xs text-zentinel-text-muted">({pct}%)</span>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border border-zentinel-gold/30 bg-zentinel-gold/5 px-4 py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">Tasa de conversión a pago</p>
+                      <p className="text-xs text-zentinel-text-muted mt-0.5">{pagos} de {totalPlanes} usuarios en plan pago</p>
+                    </div>
+                    <p className="text-3xl font-extrabold text-zentinel-gold">{conversionRate}%</p>
+                  </div>
                 </div>
-                <span className="text-[10px] text-zentinel-text-muted">{d.dia}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex gap-4 text-xs text-zentinel-text-muted">
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-zentinel-gold/60" /> Alertas</span>
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-red-500/50" /> Reportes de robo</span>
-          </div>
+              );
+            })()
+          ) : null}
         </div>
 
-        {/* Alertas recientes */}
-        <div className="lg:col-span-3 rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary shadow-lg shadow-black/20">
-          <div className="border-b border-zentinel-gold-dark/20 px-6 py-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">
-              Alertas Recientes
-            </h2>
-          </div>
-          <div className="divide-y divide-zentinel-gold-dark/10">
-            {recentAlerts.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-6 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-zentinel-text">{a.usuario}</p>
-                  <p className="text-xs text-zentinel-text-muted">{a.tipo} · {a.fecha}</p>
+        {/* Tickets resueltos */}
+        <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-6">
+          <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-zentinel-gold">
+            Soporte — resolución de tickets
+          </p>
+          {loading ? (
+            <div className="space-y-4 animate-pulse">
+              <div className="h-8 w-1/3 rounded bg-zentinel-gold-dark/15" />
+              <div className="h-3 w-full rounded-full bg-zentinel-gold-dark/20" />
+              <div className="h-3 w-1/2 rounded bg-zentinel-gold-dark/10" />
+            </div>
+          ) : data ? (
+            (() => {
+              const { total, resueltos } = data.tickets;
+              const pct = total > 0 ? Math.round((resueltos / total) * 100) : 0;
+              return (
+                <div className="space-y-5">
+                  <div className="flex items-end gap-3">
+                    <p className="text-5xl font-extrabold text-zentinel-text leading-none">{pct}%</p>
+                    <p className="text-zentinel-text-muted text-sm pb-1">tasa de resolución</p>
+                  </div>
+                  <div className="h-3 w-full rounded-full bg-zentinel-gold-dark/15 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-zentinel-gold transition-all duration-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="flex gap-6 text-sm">
+                    <div>
+                      <p className="text-2xl font-bold text-zentinel-text">{resueltos}</p>
+                      <p className="text-xs text-zentinel-text-muted">resueltos</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-zentinel-text">{total}</p>
+                      <p className="text-xs text-zentinel-text-muted">totales</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-zentinel-text">{total - resueltos}</p>
+                      <p className="text-xs text-zentinel-text-muted">pendientes</p>
+                    </div>
+                  </div>
                 </div>
-                <span
-                  className={`ml-4 shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    a.estado === "Pendiente"
-                      ? "bg-amber-500/15 text-amber-400"
-                      : "bg-green-500/15 text-green-400"
-                  }`}
-                >
-                  {a.estado}
-                </span>
-              </div>
-            ))}
-          </div>
+              );
+            })()
+          ) : null}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
