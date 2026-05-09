@@ -1,55 +1,81 @@
 /* Importamos Tailwind v4 */
 @import "tailwindcss";
 
-/* Definimos el tema personalizado usando variables CSS nativas */
+/* ─── Paleta de colores ──────────────────────────────────────────────────────
+   Modo claro:  acento azul (blue-600, alineado con mobile lightColors.primary).
+   Modo oscuro: acento amber-400 ("el amarillo de la app").
+   Fondos: mismo gris de la app mobile (gray-900 / gray-800).
+   ─────────────────────────────────────────────────────────────────────────── */
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
 
-  --color-zentinel-dark: #0a0a0a;
-  --color-zentinel-dark-secondary: #161616;
-  --color-zentinel-gold: #d4af37;
-  --color-zentinel-gold-light: #f4d06f;
-  --color-zentinel-gold-dark: #a68a2e;
-  --color-zentinel-text: #ffffff;
-  --color-zentinel-text-muted: #b3b3b3;
+  /* Light mode defaults — azul alineado con mobile lightColors.primary */
+  --color-zentinel-dark: #f8f9fa;
+  --color-zentinel-dark-secondary: #ffffff;
+  --color-zentinel-gold: #2563eb;
+  --color-zentinel-gold-light: #3b82f6;
+  --color-zentinel-gold-dark: #1d4ed8;
+  --color-zentinel-text: #111827;
+  --color-zentinel-text-muted: #6b7280;
 }
 
-/*
-  Nota: Tailwind v4 generará automáticamente clases como:
-  bg-zentinel-dark
-  text-zentinel-gold
-  border-zentinel-gold-dark
-  etc.
-*/
-
-/* Configuración base global */
+/* Modo claro */
 :root {
+  color-scheme: light;
+}
+
+/* Modo oscuro */
+.dark {
   color-scheme: dark;
+  --color-zentinel-dark: #111827;
+  --color-zentinel-dark-secondary: #1f2937;
+  --color-zentinel-gold: #fbbf24;
+  --color-zentinel-gold-light: #fcd34d;
+  --color-zentinel-gold-dark: #f59e0b;
+  --color-zentinel-text: #f9fafb;
+  --color-zentinel-text-muted: #9ca3af;
 }
 
+/* ─── Base global ────────────────────────────────────────────────────────── */
 body {
-  /* Usamos las clases generadas por el tema */
   @apply bg-zentinel-dark text-zentinel-text font-sans min-h-screen;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Fondo con textura muy sutil — solo visible en modo oscuro */
+.dark body {
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(251,191,36,0.07) 0%, transparent 60%);
+}
+
+/* ─── Componentes reutilizables ──────────────────────────────────────────── */
 @layer components {
+  /* Tarjetas con elevación y sombra de color */
+  .zentinel-card {
+    @apply rounded-xl border border-zentinel-gold-dark/15 bg-zentinel-dark-secondary;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .dark .zentinel-card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  /* Manual sidebar nav */
   .nav-item-manual {
-    @apply block py-2 px-3 text-zentinel-text-muted hover:text-zentinel-gold hover:bg-zentinel-gold/5 rounded-md transition-all duration-200 border-l-2 border-transparent hover:border-zentinel-gold;
+    @apply block py-2 px-3 text-zentinel-text-muted hover:text-zentinel-gold hover:bg-zentinel-gold/10 rounded-md transition-all duration-200 border-l-2 border-transparent hover:border-zentinel-gold;
   }
 
   .manual-section {
-    @apply mb-16 scroll-mt-28; /* scroll-mt ayuda a que el título no quede tapado por el navbar sticky al hacer click */
+    @apply mb-16 scroll-mt-28;
   }
 
   .manual-h2 {
-    @apply text-3xl font-bold text-white mb-6 pb-4 border-b border-zentinel-gold-dark/20;
+    @apply text-3xl font-bold text-zentinel-text mb-6 pb-4 border-b border-zentinel-gold-dark/20;
   }
 
   .manual-subsection {
-    @apply bg-zentinel-dark-secondary/30 p-5 rounded-lg border border-zentinel-gold-dark/10;
+    @apply bg-zentinel-gold/5 p-5 rounded-lg border border-zentinel-gold-dark/15;
   }
 
-  /* Estilos base para texto rico dentro del manual */
+  /* Texto rico */
   .prose-zentinel p {
     @apply text-zentinel-text-muted leading-relaxed mb-4 text-lg;
   }
@@ -62,5 +88,13 @@ body {
   }
   .prose-zentinel strong {
     @apply text-zentinel-gold font-semibold;
+  }
+
+  /* Inputs — focus ring en amber para coherencia de marca */
+  .zentinel-input {
+    @apply w-full rounded-md border border-zentinel-gold-dark/30 bg-zentinel-dark p-3
+           text-zentinel-text placeholder-zentinel-text-muted/50
+           outline-none transition-all
+           focus:border-zentinel-gold focus:ring-2 focus:ring-zentinel-gold/20;
   }
 }

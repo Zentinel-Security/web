@@ -50,7 +50,7 @@ export default function Metricas() {
             <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">
               {k.label}
             </p>
-            <p className="mt-2 text-4xl font-bold text-white">{k.value}</p>
+            <p className="mt-2 text-4xl font-bold text-zentinel-text">{k.value}</p>
             <div className="mt-3 flex items-center gap-1 text-sm">
               <span className={k.deltaUp ? "text-green-400" : "text-amber-400"}>
                 {k.deltaUp ? "↑" : "↓"} {k.delta}

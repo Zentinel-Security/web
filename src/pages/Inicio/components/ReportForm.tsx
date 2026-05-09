@@ -43,7 +43,7 @@ export default function ReportForm({
       onSubmit={handleSubmit}
       className="bg-zentinel-dark-secondary/60 p-6 sm:p-8 rounded-xl border border-zentinel-gold-dark/30 shadow-2xl shadow-black/50 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
-      <h3 className="text-2xl font-bold text-white mb-6">
+      <h3 className="text-2xl font-bold text-zentinel-text mb-6">
         Detalles del Reporte
       </h3>
 
@@ -101,7 +101,7 @@ export default function ReportForm({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 bg-transparent hover:bg-white/5 text-zentinel-text-muted font-medium py-3 px-6 rounded-md border border-zentinel-gold-dark/30 transition-colors"
+            className="flex-1 bg-transparent hover:bg-zentinel-text/5 text-zentinel-text-muted font-medium py-3 px-6 rounded-md border border-zentinel-gold-dark/30 transition-colors"
           >
             Cancelar
           </button>
