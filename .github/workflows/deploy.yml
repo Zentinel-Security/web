@@ -45,6 +45,7 @@ jobs:
         env:
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
           VITE_ENV: production
+          VITE_GOOGLE_MAPS_API_KEY: ${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

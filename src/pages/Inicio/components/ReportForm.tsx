@@ -3,8 +3,6 @@ import React from "react";
 
 export interface ReportDraft {
   reportType: "Perdido" | "Robado";
-  phone: string;
-  email: string;
   description: string;
   includeLocation: boolean;
 }
@@ -65,38 +63,6 @@ export default function ReportForm({
             <option value="Perdido">Perdido</option>
             <option value="Robado">Robado</option>
           </select>
-        </div>
-
-        {/* Campo Teléfono */}
-        <div>
-          <label htmlFor="phone" className={labelClasses}>
-            Número de Celular Extraviado
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            required
-            placeholder="+54 9 11 1234-5678"
-            value={values.phone}
-            onChange={(event) => updateField("phone", event.target.value)}
-            className={inputClasses}
-          />
-        </div>
-
-        {/* Campo Email */}
-        <div>
-          <label htmlFor="email" className={labelClasses}>
-            Email de Contacto Alternativo
-          </label>
-          <input
-            type="email"
-            id="email"
-            required
-            placeholder="tu@email.com"
-            value={values.email}
-            onChange={(event) => updateField("email", event.target.value)}
-            className={inputClasses}
-          />
         </div>
 
         {/* Campo Descripción */}

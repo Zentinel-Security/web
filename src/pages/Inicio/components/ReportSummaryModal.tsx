@@ -43,20 +43,6 @@ export default function ReportSummaryModal({
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
-              Número de celular extraviado
-            </p>
-            <p className="mt-1 text-zentinel-text">{report.phone}</p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
-              Email de contacto alternativo
-            </p>
-            <p className="mt-1 text-zentinel-text">{report.email}</p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-gold">
               Información adicional
             </p>
             <p className="mt-1 whitespace-pre-line text-zentinel-text">

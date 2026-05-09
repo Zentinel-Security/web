@@ -15,6 +15,9 @@ export interface DeviceReport {
   estado_reporte: "creado" | "finalizado";
   incluye_ubicacion: boolean;
   fecha_creacion: string;
+  latitud?: number | null;
+  longitud?: number | null;
+  fecha_ubicacion?: string | null;
 }
 
 interface CreateDeviceReportResponse {
