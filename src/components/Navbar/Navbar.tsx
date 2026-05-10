@@ -5,10 +5,9 @@ import { useTheme } from "../../context/ThemeContext";
 import LoginModal from "../auth/LoginModal";
 
 export default function Navbar() {
-  const { isAuthenticated, logout, user } = useAuth();
+  const { isAuthenticated, logout, user, isStaff } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const isAdmin = Boolean(user?.es_admin);
 
   const linkBase =
     "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200";
@@ -70,7 +69,7 @@ export default function Navbar() {
               >
                 Reportes
               </NavLink>
-              {isAdmin ? (
+              {isStaff ? (
                 <>
                   <NavLink
                     to="/metricas"

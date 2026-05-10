@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getUsuariosAdmin, getReportesAdmin, suspenderUsuario, reactivarUsuario, type UsuarioAdmin, type ReporteDispositivoAdmin } from "../../services/gestionService";
+import { getUsuariosAdmin, getReportesAdmin, suspenderUsuario, reactivarUsuario, cambiarRolUsuario, type UsuarioAdmin, type ReporteDispositivoAdmin } from "../../services/gestionService";
 import { getAllTicketsAdmin, type TicketConUsuario, type TicketEstado, type TicketTipo } from "../../services/ticketService";
 import { TIPO_LABELS, ESTADO_BADGE, ESTADO_LABELS } from "../Soporte/soporteConstants";
 import AdminTicketDetail from "./components/AdminTicketDetail";
@@ -33,8 +33,12 @@ const TICKET_ESTADO_OPTIONS: Array<{ value: TicketEstado | ""; label: string }> 
   { value: "cerrado",     label: "Cerrado" },
 ];
 
+const ROL_LABELS: Record<number, string> = { 1: 'usuario', 2: 'admin', 3: 'usuario', 4: 'manager', 5: 'soporte' };
+const ROLES_ASIGNABLES = [{ id: 3, label: 'Usuario' }, { id: 4, label: 'Manager' }, { id: 5, label: 'Soporte' }];
+
 export default function Gestion() {
-  const { token } = useAuth();
+  const { token, user: authUser, isSupport } = useAuth();
+  const isAdmin = authUser?.id_rol === 2;
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as Tab) || "usuarios";
   const setActiveTab = (tab: Tab) => setSearchParams({ tab });
@@ -58,6 +62,7 @@ export default function Gestion() {
   const [selectedUser, setSelectedUser] = useState<UsuarioAdmin | null>(null);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [rolCambio, setRolCambio] = useState<number | "">("");
 
   // ─── Toast ───────────────────────────────────────────────────
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -72,6 +77,7 @@ export default function Gestion() {
   const closeModal = () => {
     setSelectedUser(null);
     setConfirmSuspend(false);
+    setRolCambio("");
   };
 
   // ─── Tickets ─────────────────────────────────────────────
@@ -139,6 +145,27 @@ export default function Gestion() {
   const handleApplyFilters = () => {
     setTickets([]);
     void loadTickets();
+  };
+
+  const handleCambiarRol = async () => {
+    if (!selectedUser || !token || rolCambio === "") return;
+    setActionLoading(true);
+    try {
+      const updated = await cambiarRolUsuario(token, selectedUser.id, rolCambio);
+      const updatedUser: UsuarioAdmin = {
+        ...selectedUser,
+        id_rol: updated.id_rol,
+        rol_descripcion: ROL_LABELS[updated.id_rol] ?? null,
+      };
+      setUsuarios((prev) => prev.map((u) => (u.id === selectedUser.id ? updatedUser : u)));
+      setSelectedUser(updatedUser);
+      setRolCambio("");
+      showToast(`Rol de ${selectedUser.nombre} actualizado a ${ROL_LABELS[rolCambio]}.`, "success");
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : "Error al cambiar el rol", "error");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleSuspend = async () => {
@@ -222,66 +249,160 @@ export default function Gestion() {
 
       {/* User detail modal */}
       {selectedUser && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
-          <div className="w-full max-w-sm rounded-xl border border-zentinel-gold-dark/30 bg-zentinel-dark-secondary p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between">
-              <h3 className="text-lg font-bold text-zentinel-text">Detalle de usuario</h3>
-              <button onClick={closeModal} className="text-xl leading-none text-zentinel-text-muted transition-colors hover:text-zentinel-text">×</button>
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={closeModal}>
+          <div className="w-full max-w-md rounded-2xl border border-zentinel-gold-dark/25 bg-zentinel-dark-secondary shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+
+            {/* ── Header ─────────────────────────────────────────── */}
+            <div className="relative px-6 pt-6 pb-5 border-b border-zentinel-gold-dark/15" style={{background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-zentinel-gold) 6%, transparent), transparent)'}}>
+              <button
+                onClick={closeModal}
+                className="absolute right-4 top-4 rounded-lg p-1.5 text-zentinel-text-muted transition-colors hover:bg-zentinel-text/10 hover:text-zentinel-text"
+                aria-label="Cerrar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="flex items-center gap-4 pr-8">
+                {/* Avatar */}
+                <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-zentinel-gold/25 overflow-hidden flex items-center justify-center bg-zentinel-gold/10">
+                  {selectedUser.avatar ? (
+                    <img src={selectedUser.avatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-base font-bold text-zentinel-gold select-none">
+                      {selectedUser.nombre.charAt(0).toUpperCase()}{selectedUser.apellido.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                {/* Name + email + badges */}
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-zentinel-text text-base truncate leading-tight">
+                    {selectedUser.nombre} {selectedUser.apellido}
+                  </p>
+                  <p className="text-xs text-zentinel-text-muted truncate mt-0.5">{selectedUser.email}</p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {/* Rol badge con colores por rol */}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      selectedUser.id_rol === 2 ? "bg-amber-400/15 text-amber-400" :
+                      selectedUser.id_rol === 4 ? "bg-blue-400/15 text-blue-400" :
+                      selectedUser.id_rol === 5 ? "bg-purple-400/15 text-purple-400" :
+                      "bg-zentinel-text/8 text-zentinel-text-muted"
+                    }`}>
+                      {ROL_LABELS[selectedUser.id_rol] ?? "usuario"}
+                    </span>
+                    {/* Estado badge */}
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${selectedUser.activo ? "bg-green-500/12 text-green-400" : "bg-red-500/12 text-red-400"}`}>
+                      <span className="w-1.5 h-1.5 rounded-full inline-block" style={{background: 'currentColor'}} />
+                      {selectedUser.activo ? "Activa" : "Suspendida"}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="mt-4 space-y-3">
-              <div>
-                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Nombre</p>
-                <p className="mt-0.5 font-semibold text-zentinel-text">{selectedUser.nombre} {selectedUser.apellido}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Email</p>
-                <p className="mt-0.5 text-sm text-zentinel-text">{selectedUser.email}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Rol</p>
-                <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${selectedUser.id_rol === 2 ? "bg-zentinel-gold/15 text-zentinel-gold" : "bg-zentinel-text/5 text-zentinel-text-muted"}`}>
-                  {selectedUser.rol_descripcion ?? "usuario"}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wider text-zentinel-text-muted">Estado</p>
-                <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${estadoCuentaStyle(selectedUser.activo)}`}>
-                  {selectedUser.activo ? "Activa" : "Suspendida"}
-                </span>
-              </div>
+
+            {/* ── Body ───────────────────────────────────────────── */}
+            <div className="px-6 py-5 space-y-5">
+
+              {/* Role picker — solo admin, sobre usuarios no-admin */}
+              {isAdmin && selectedUser.id_rol !== 2 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted mb-3">Cambiar rol</p>
+                  <div className="flex flex-wrap gap-2">
+                    {ROLES_ASIGNABLES.map((r) => {
+                      const isCurrent = r.id === selectedUser.id_rol;
+                      const isSelected = r.id === rolCambio;
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => setRolCambio(isCurrent ? "" : (isSelected ? "" : r.id))}
+                          disabled={isCurrent}
+                          className={`px-3.5 py-1.5 rounded-full text-sm font-semibold transition-all border ${
+                            isCurrent
+                              ? "border-zentinel-gold-dark/30 bg-zentinel-gold/10 text-zentinel-gold/50 cursor-default"
+                              : isSelected
+                              ? "border-zentinel-gold bg-zentinel-gold/15 text-zentinel-gold shadow-sm"
+                              : "border-zentinel-gold-dark/25 bg-transparent text-zentinel-text-muted hover:border-zentinel-gold/50 hover:text-zentinel-text hover:bg-zentinel-text/5"
+                          }`}
+                        >
+                          {isCurrent && <span className="mr-1 text-xs opacity-70">✓</span>}
+                          {r.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {rolCambio !== "" && (
+                    <div className="mt-3 flex items-center justify-between rounded-xl border border-zentinel-gold/25 bg-zentinel-gold/5 px-4 py-2.5">
+                      <p className="text-sm text-zentinel-text-muted">
+                        Asignar rol <span className="font-semibold text-zentinel-gold">{ROLES_ASIGNABLES.find(r => r.id === rolCambio)?.label}</span>
+                      </p>
+                      <button
+                        onClick={handleCambiarRol}
+                        disabled={actionLoading}
+                        className="ml-4 rounded-lg bg-zentinel-gold px-4 py-1.5 text-xs font-bold text-zentinel-dark transition-colors hover:bg-zentinel-gold-light disabled:opacity-50"
+                      >
+                        {actionLoading ? "Guardando…" : "Confirmar"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Confirm suspend warning */}
+              {confirmSuspend && (
+                <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                  </svg>
+                  <p className="text-sm text-red-300 leading-relaxed">
+                    ¿Suspender a <span className="font-semibold">{selectedUser.nombre} {selectedUser.apellido}</span>? No podrá iniciar sesión hasta ser reactivado.
+                  </p>
+                </div>
+              )}
             </div>
-            {confirmSuspend && (
-              <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-                <p className="text-sm text-red-300">
-                  ¿Confirmar suspensión de <span className="font-semibold">{selectedUser.nombre}</span>? El usuario no podrá iniciar sesión hasta ser reactivado.
-                </p>
-              </div>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              {confirmSuspend ? (
-                <>
-                  <button onClick={() => setConfirmSuspend(false)} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5 disabled:opacity-50">
-                    Cancelar
-                  </button>
-                  <button onClick={handleSuspend} disabled={actionLoading} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50">
-                    {actionLoading ? "Suspendiendo…" : "Sí, suspender"}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={closeModal} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5">
-                    Cerrar
-                  </button>
-                  {selectedUser.activo ? (
-                    <button onClick={() => setConfirmSuspend(true)} className="rounded-lg bg-red-600/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-600/40">
-                      Suspender cuenta
+
+            {/* ── Footer actions ──────────────────────────────────── */}
+            <div className="px-6 pb-5 flex items-center justify-between border-t border-zentinel-gold-dark/10 pt-4">
+              <button onClick={closeModal} className="text-sm text-zentinel-text-muted transition-colors hover:text-zentinel-text">
+                Cerrar
+              </button>
+
+              {isSupport && (
+                <div className="flex gap-2">
+                  {confirmSuspend ? (
+                    <>
+                      <button onClick={() => setConfirmSuspend(false)} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5 disabled:opacity-50">
+                        Cancelar
+                      </button>
+                      <button onClick={handleSuspend} disabled={actionLoading} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50">
+                        {actionLoading ? "Suspendiendo…" : "Sí, suspender"}
+                      </button>
+                    </>
+                  ) : selectedUser.activo ? (
+                    <button
+                      onClick={() => setConfirmSuspend(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-400 transition-all hover:border-red-500/50 hover:bg-red-500/20"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      Suspender
                     </button>
                   ) : (
-                    <button onClick={handleReactivar} disabled={actionLoading} className="rounded-lg bg-green-600/20 px-4 py-2 text-sm font-semibold text-green-400 transition-colors hover:bg-green-600/40 disabled:opacity-50">
-                      {actionLoading ? "Reactivando…" : "Reactivar cuenta"}
+                    <button
+                      onClick={handleReactivar}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 transition-all hover:border-green-500/50 hover:bg-green-500/20 disabled:opacity-50"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                      </svg>
+                      {actionLoading ? "Reactivando…" : "Reactivar"}
                     </button>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
@@ -568,6 +689,7 @@ export default function Gestion() {
           token={token}
           onClose={() => setSelectedTicketId(null)}
           onUpdated={handleTicketUpdated}
+          canEdit={isSupport}
         />
       ) : null}
     </div>

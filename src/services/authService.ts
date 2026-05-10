@@ -8,6 +8,7 @@ export interface AuthUser {
   avatar?: string;
   estado_cuenta?: "activa" | "suspendida";
   es_admin?: boolean;
+  id_rol?: number;
 }
 
 export interface LoginResponse {
