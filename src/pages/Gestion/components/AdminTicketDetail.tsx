@@ -13,6 +13,7 @@ interface AdminTicketDetailProps {
   token: string;
   onClose: () => void;
   onUpdated: (ticketId: number, newEstado: TicketEstado) => void;
+  canEdit?: boolean;
 }
 
 const ESTADO_OPTIONS: TicketEstado[] = ["abierto", "en_progreso", "resuelto", "cerrado"];
@@ -22,6 +23,7 @@ export default function AdminTicketDetail({
   token,
   onClose,
   onUpdated,
+  canEdit = true,
 }: AdminTicketDetailProps) {
   const [detalle, setDetalle] = useState<TicketDetalleAdmin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +192,7 @@ export default function AdminTicketDetail({
         </div>
 
         {/* Reply + Estado area */}
-        {!isLoading && !error && ticket ? (
+        {!isLoading && !error && ticket && canEdit ? (
           <div className="border-t border-zentinel-gold-dark/20 px-6 py-4 shrink-0 space-y-3">
             {sendError ? (
               <p className="rounded-md border border-red-500/30 bg-red-950/40 px-3 py-2 text-sm text-red-300">

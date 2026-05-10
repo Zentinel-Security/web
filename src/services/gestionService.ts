@@ -65,3 +65,14 @@ export const reactivarUsuario = async (token: string, idUsuario: number): Promis
   const json = await response.json().catch(() => null);
   if (!response.ok) throw new Error(json?.error ?? "Error al reactivar usuario");
 };
+
+export const cambiarRolUsuario = async (token: string, idUsuario: number, idRol: number): Promise<UsuarioAdmin> => {
+  const response = await apiFetch(`${API_BASE_URL}/usuarios/${idUsuario}/cambiar-rol`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ id_rol: idRol }),
+  });
+  const json = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(json?.error ?? "Error al cambiar el rol");
+  return json.usuario as UsuarioAdmin;
+};

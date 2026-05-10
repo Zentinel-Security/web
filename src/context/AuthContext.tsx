@@ -24,6 +24,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
   isAuthenticated: boolean;
+  isStaff: boolean;
+  isSupport: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -100,6 +102,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user: authState?.user ?? null,
       token: authState?.token ?? null,
       isAuthenticated: Boolean(authState?.token),
+      isStaff: [2, 4, 5].includes(authState?.user?.id_rol ?? 0),
+      isSupport: [2, 5].includes(authState?.user?.id_rol ?? 0),
       login,
       logout,
     }),

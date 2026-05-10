@@ -9,10 +9,10 @@ import Gestion from "./pages/Gestion/Gestion";
 import Soporte from "./pages/Soporte/Soporte";
 import { useAuth } from "./context/AuthContext";
 
-function AdminOnlyRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+function StaffOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isStaff } = useAuth();
 
-  if (!user?.es_admin) {
+  if (!isStaff) {
     return <Navigate to="/" replace />;
   }
 
@@ -28,8 +28,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/reportes" element={<Inicio />} />
-            <Route path="/metricas" element={<AdminOnlyRoute><Metricas /></AdminOnlyRoute>} />
-            <Route path="/gestion" element={<AdminOnlyRoute><Gestion /></AdminOnlyRoute>} />
+            <Route path="/metricas" element={<StaffOnlyRoute><Metricas /></StaffOnlyRoute>} />
+            <Route path="/gestion" element={<StaffOnlyRoute><Gestion /></StaffOnlyRoute>} />
             <Route path="/soporte" element={<Soporte />} />
             <Route path="/manual" element={<Manual />} />
 
