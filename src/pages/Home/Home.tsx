@@ -1,4 +1,7 @@
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { fetchMetricas } from "../../services/metricasService";
 
 const features = [
   {
@@ -45,7 +48,92 @@ const steps = [
   { step: "03", title: "Viví tranquilo", description: "Zentinel corre en tiempo real. Si algo ocurre, actuamos de inmediato." },
 ];
 
+const plans = [
+  {
+    key: "gratuito",
+    name: "Gratuito",
+    highlight: false,
+    features: [
+      { text: "Reporte de extravío", included: true },
+      { text: "Alertas SOS básicas", included: true },
+      { text: "1 grupo de seguridad", included: true },
+      { text: "Rastreo en tiempo real", included: false },
+      { text: "Zonas seguras ilimitadas", included: false },
+      { text: "Zentinelas prioritarios", included: false },
+    ],
+  },
+  {
+    key: "premium",
+    name: "Premium",
+    highlight: true,
+    features: [
+      { text: "Reporte de extravío", included: true },
+      { text: "Alertas SOS avanzadas", included: true },
+      { text: "Grupos ilimitados", included: true },
+      { text: "Rastreo en tiempo real", included: true },
+      { text: "Zonas seguras ilimitadas", included: true },
+      { text: "Zentinelas prioritarios", included: false },
+    ],
+  },
+  {
+    key: "premium_plus",
+    name: "Premium Plus",
+    highlight: false,
+    features: [
+      { text: "Reporte de extravío", included: true },
+      { text: "Alertas SOS avanzadas", included: true },
+      { text: "Grupos ilimitados", included: true },
+      { text: "Rastreo en tiempo real", included: true },
+      { text: "Zonas seguras ilimitadas", included: true },
+      { text: "Zentinelas prioritarios", included: true },
+    ],
+  },
+];
+
+function useCountUp(target: number, duration = 1500) {
+  const [count, setCount] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (target === 0) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * target));
+      if (progress < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+  return count;
+}
+
 export default function Home() {
+  const { isStaff, token } = useAuth();
+  const [totalUsuarios, setTotalUsuarios] = useState(0);
+  const counterRef = useRef<HTMLDivElement>(null);
+  const [counterVisible, setCounterVisible] = useState(false);
+  const displayCount = useCountUp(counterVisible ? totalUsuarios : 0);
+
+  useEffect(() => {
+    if (!isStaff || !token) return;
+    fetchMetricas(token)
+      .then((d) => setTotalUsuarios(d.usuarios.total))
+      .catch(() => {});
+  }, [isStaff, token]);
+
+  useEffect(() => {
+    const el = counterRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setCounterVisible(true); observer.disconnect(); } },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="space-y-24 pb-16">
 
@@ -86,6 +174,22 @@ export default function Home() {
             Contactar soporte
           </Link>
         </div>
+
+        {/* Play Store badge */}
+        <div className="mt-8 flex justify-center">
+          <div
+            className="inline-flex items-center gap-3 rounded-2xl border border-zentinel-gold-dark/30 bg-zentinel-dark-secondary px-5 py-3 opacity-70 cursor-not-allowed select-none"
+            title="Próximamente disponible en Google Play"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="h-7 w-7 fill-zentinel-gold flex-shrink-0" aria-hidden="true">
+              <path d="M3.18 23.76c.3.17.65.19.97.07L15.83 12 12 8.17 3.18 23.76zm17.15-12.25-3.06-1.75L13.41 12l3.86 3.86 3.06-1.74a1.4 1.4 0 0 0 0-2.61zM3.65.17a1.05 1.05 0 0 0-.47.91v21.84c0 .38.18.72.47.91L12 12 3.65.17zM15.83 12 4.15.24a1.1 1.1 0 0 0-.97.07L12 12l3.83-3.83L15.83 12z"/>
+            </svg>
+            <div className="text-left">
+              <p className="text-[11px] text-zentinel-text-muted leading-none">Próximamente en</p>
+              <p className="text-sm font-bold text-zentinel-text leading-tight">Google Play</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────────────────── */}
@@ -110,6 +214,60 @@ export default function Home() {
               </div>
               <h3 className="mb-2 font-bold text-zentinel-text">{f.title}</h3>
               <p className="text-sm text-zentinel-text-muted leading-relaxed">{f.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PLANS ─────────────────────────────────────────────────────────── */}
+      <section>
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zentinel-text mb-3">
+            Encontrá el plan que mejor se adapta
+          </h2>
+          <p className="text-zentinel-text-muted max-w-xl mx-auto">
+            Todos los planes incluyen acceso a la app móvil y actualizaciones.
+          </p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-3">
+          {plans.map((plan) => (
+            <div
+              key={plan.key}
+              className={`relative rounded-2xl border p-6 flex flex-col gap-5 transition-all ${
+                plan.highlight
+                  ? "border-zentinel-gold bg-zentinel-gold/5 shadow-xl shadow-zentinel-gold/10"
+                  : "border-zentinel-gold-dark/20 bg-zentinel-dark-secondary"
+              }`}
+            >
+              {plan.highlight && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center rounded-full bg-zentinel-gold px-3 py-0.5 text-xs font-bold text-zentinel-dark">
+                    Más popular
+                  </span>
+                </div>
+              )}
+              <div>
+                <h3 className={`text-lg font-extrabold ${ plan.highlight ? "text-zentinel-gold" : "text-zentinel-text"}`}>
+                  {plan.name}
+                </h3>
+              </div>
+              <ul className="space-y-2.5 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f.text} className="flex items-center gap-2.5 text-sm">
+                    {f.included ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-gold flex-shrink-0">
+                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-text-muted/30 flex-shrink-0">
+                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                      </svg>
+                    )}
+                    <span className={f.included ? "text-zentinel-text" : "text-zentinel-text-muted/50"}>{f.text}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
@@ -140,6 +298,18 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── STATS ────────────────────────────────────────────────────────── */}
+      <section ref={counterRef} className="rounded-2xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary py-12 px-6 text-center">
+        <p className="text-xs font-semibold uppercase tracking-widest text-zentinel-text-muted mb-3">
+          Confianza que crece
+        </p>
+        <p className="text-6xl sm:text-7xl font-extrabold text-zentinel-gold leading-none">
+          {isStaff && totalUsuarios > 0 ? `+${displayCount}` : "+100"}
+        </p>
+        <p className="mt-3 text-lg text-zentinel-text-muted">
+          usuarios ya protegidos con Zentinel
+        </p>
+      </section>
 
     </div>
   );
