@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-import { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import LoginModal from "../auth/LoginModal";
@@ -8,6 +8,23 @@ export default function Navbar() {
   const { isAuthenticated, logout, user, isStaff } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const initials = user
+    ? `${user.nombre?.charAt(0) ?? ""}${user.apellido?.charAt(0) ?? ""}`.toUpperCase()
+    : "";
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const linkBase =
     "px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200";
@@ -125,17 +142,57 @@ export default function Navbar() {
             </button>
 
             {isAuthenticated ? (
-              <div className="hidden items-center gap-2 rounded-lg border border-zentinel-gold-dark/25 bg-zentinel-dark/70 px-3 py-1.5 sm:flex">
-                <span className="max-w-[140px] truncate text-xs text-zentinel-text-muted">
-                  {user?.email}
-                </span>
+              <div className="relative" ref={menuRef}>
                 <button
                   type="button"
-                  onClick={logout}
-                  className="rounded bg-zentinel-gold px-2 py-1 text-xs font-bold text-zentinel-dark hover:bg-zentinel-gold-light"
+                  onClick={() => setIsUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 rounded-xl border border-zentinel-gold-dark/25 bg-zentinel-dark/70 pl-1 pr-3 py-1 hover:border-zentinel-gold/40 transition-colors"
+                  aria-label="Menú de usuario"
                 >
-                  Cerrar sesión
+                  <div className="w-7 h-7 rounded-full bg-zentinel-gold/15 border border-zentinel-gold/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[10px] font-bold text-zentinel-gold">{initials}</span>
+                    )}
+                  </div>
+                  <span className="hidden sm:block max-w-[100px] truncate text-xs text-zentinel-text-muted">
+                    {user?.nombre}
+                  </span>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-3.5 h-3.5 text-zentinel-text-muted transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`}>
+                    <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                  </svg>
                 </button>
+
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-zentinel-gold-dark/25 bg-zentinel-dark-secondary shadow-xl overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-zentinel-gold-dark/15">
+                      <p className="text-xs font-semibold text-zentinel-text truncate">{user?.nombre} {user?.apellido}</p>
+                      <p className="text-[11px] text-zentinel-text-muted truncate mt-0.5">{user?.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setIsUserMenuOpen(false); navigate("/perfil"); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zentinel-text-muted hover:bg-zentinel-text/5 hover:text-zentinel-text transition-colors text-left"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                        <path d="M10 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM3.465 14.493a1.23 1.23 0 0 0 .41 1.412A9.957 9.957 0 0 0 10 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 0 0-13.074.003Z" />
+                      </svg>
+                      Mi perfil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setIsUserMenuOpen(false); logout(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                        <path fillRule="evenodd" d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M6 10a.75.75 0 0 1 .75-.75h9.546l-1.048-.943a.75.75 0 1 1 1.004-1.114l2.5 2.25a.75.75 0 0 1 0 1.114l-2.5 2.25a.75.75 0 1 1-1.004-1.114l1.048-.943H6.75A.75.75 0 0 1 6 10Z" clipRule="evenodd" />
+                      </svg>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button

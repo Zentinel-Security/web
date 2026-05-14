@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import { getUsuariosAdmin, getReportesAdmin, suspenderUsuario, reactivarUsuario, cambiarRolUsuario, type UsuarioAdmin, type ReporteDispositivoAdmin } from "../../services/gestionService";
 import { getAllTicketsAdmin, type TicketConUsuario, type TicketEstado, type TicketTipo } from "../../services/ticketService";
 import { TIPO_LABELS, ESTADO_BADGE, ESTADO_LABELS } from "../Soporte/soporteConstants";
@@ -36,9 +37,12 @@ const TICKET_ESTADO_OPTIONS: Array<{ value: TicketEstado | ""; label: string }> 
 const ROL_LABELS: Record<number, string> = { 1: 'usuario', 2: 'admin', 3: 'usuario', 4: 'manager', 5: 'soporte' };
 const ROLES_ASIGNABLES = [{ id: 3, label: 'Usuario' }, { id: 4, label: 'Manager' }, { id: 5, label: 'Soporte' }];
 
+const PAGE_SIZE = 10;
+
 export default function Gestion() {
   const { token, user: authUser, isSupport } = useAuth();
   const isAdmin = authUser?.id_rol === 2;
+  const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get("tab") as Tab) || "usuarios";
   const setActiveTab = (tab: Tab) => setSearchParams({ tab });
@@ -64,15 +68,8 @@ export default function Gestion() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rolCambio, setRolCambio] = useState<number | "">("");
 
-  // ─── Toast ───────────────────────────────────────────────────
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ message, type });
-    toastTimer.current = setTimeout(() => setToast(null), 3500);
-  };
+  // ─── Pagination ──────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
 
   const closeModal = () => {
     setSelectedUser(null);
@@ -214,6 +211,29 @@ export default function Gestion() {
         : "text-zentinel-text-muted hover:text-zentinel-gold-light hover:bg-zentinel-text/5"
     }`;
 
+  // ─── CSV Export ───────────────────────────────────────────────
+  const exportCSV = useCallback(() => {
+    const headers = ["ID", "Nombre", "Apellido", "Email", "Rol", "Estado"];
+    const rows = usuarios.map((u) => [
+      u.id,
+      u.nombre,
+      u.apellido,
+      u.email,
+      u.rol_descripcion ?? ROL_LABELS[u.id_rol] ?? "usuario",
+      u.activo ? "activa" : "suspendida",
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `usuarios-zentinel-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [usuarios]);
+
   // ─── Derived ──────────────────────────────────────────────
   const filteredUsuarios = usuarios.filter((u) => {
     if (searchValue) {
@@ -230,6 +250,10 @@ export default function Gestion() {
     return true;
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredUsuarios.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedUsuarios = filteredUsuarios.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   // ─── Stats header ─────────────────────────────────────────
   const totalUsuarios   = usuarios.length;
   const suspendidos     = usuarios.filter((u) => !u.activo).length;
@@ -238,14 +262,6 @@ export default function Gestion() {
 
   return (
     <div className="space-y-6">
-
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg px-5 py-3 text-sm font-medium shadow-xl ${toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
-          <span>{toast.type === "success" ? "✓" : "✕"}</span>
-          {toast.message}
-        </div>
-      )}
 
       {/* User detail modal */}
       {selectedUser && (
@@ -444,11 +460,25 @@ export default function Gestion() {
       {/* ── Tab: Usuarios ─────────────────────────────────── */}
       {activeTab === "usuarios" && (
         <div className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary shadow-lg shadow-black/20">
-          <div className="flex items-center justify-between border-b border-zentinel-gold-dark/20 px-6 py-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">Usuarios</h2>
-            <span className="rounded-full bg-zentinel-gold/10 px-3 py-0.5 text-xs text-zentinel-gold">
-              {loadingUsuarios ? "Cargando..." : `${filteredUsuarios.length} registros`}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zentinel-gold-dark/20 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">Usuarios</h2>
+              <span className="rounded-full bg-zentinel-gold/10 px-3 py-0.5 text-xs text-zentinel-gold">
+                {loadingUsuarios ? "Cargando..." : `${filteredUsuarios.length} registros`}
+              </span>
+            </div>
+            {!loadingUsuarios && usuarios.length > 0 && (
+              <button
+                onClick={exportCSV}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zentinel-gold-dark/30 px-3 py-1.5 text-xs font-semibold text-zentinel-text-muted transition-colors hover:border-zentinel-gold/40 hover:text-zentinel-gold"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                  <path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" />
+                  <path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" />
+                </svg>
+                Exportar CSV
+              </button>
+            )}
           </div>
 
           {/* Filtros */}
@@ -488,9 +518,29 @@ export default function Gestion() {
           {errorUsuarios ? (
             <p className="px-6 py-4 text-sm text-red-400">{errorUsuarios}</p>
           ) : loadingUsuarios ? (
-            <p className="px-6 py-6 text-sm text-zentinel-text-muted text-center">Cargando usuarios...</p>
+            <div className="divide-y divide-zentinel-gold-dark/10">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-3 animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-zentinel-gold-dark/15 flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-1/3 rounded bg-zentinel-gold-dark/20" />
+                    <div className="h-2.5 w-1/2 rounded bg-zentinel-gold-dark/10" />
+                  </div>
+                  <div className="h-5 w-16 rounded-full bg-zentinel-gold-dark/15" />
+                  <div className="h-5 w-16 rounded-full bg-zentinel-gold-dark/15" />
+                </div>
+              ))}
+            </div>
           ) : filteredUsuarios.length === 0 ? (
-            <p className="px-6 py-6 text-sm text-zentinel-text-muted text-center">No se encontraron usuarios.</p>
+            <div className="px-6 py-10 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-zentinel-gold/8 text-zentinel-gold">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-zentinel-text mb-1">Sin resultados</p>
+              <p className="text-xs text-zentinel-text-muted">No se encontraron usuarios con esos filtros.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -503,21 +553,33 @@ export default function Gestion() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zentinel-gold-dark/10">
-                  {filteredUsuarios.map((u) => (
+                  {paginatedUsuarios.map((u) => (
                     <tr
                       key={u.id}
                       onClick={() => { setSelectedUser(u); setConfirmSuspend(false); }}
                       className="cursor-pointer hover:bg-zentinel-text/5 transition-colors"
                     >
-                      <td className="px-6 py-3 font-medium text-zentinel-text">{u.nombre} {u.apellido}</td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-zentinel-gold/10 border border-zentinel-gold/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {u.avatar ? (
+                              <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-zentinel-gold">{(u.nombre.charAt(0) + u.apellido.charAt(0)).toUpperCase()}</span>
+                            )}
+                          </div>
+                          <span className="font-medium text-zentinel-text">{u.nombre} {u.apellido}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-3 text-zentinel-text-muted">{u.email}</td>
                       <td className="px-6 py-3 text-center">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          u.id_rol === 2
-                            ? "bg-zentinel-gold/15 text-zentinel-gold"
-                            : "bg-zentinel-text/5 text-zentinel-text-muted"
+                          u.id_rol === 2 ? "bg-amber-400/15 text-amber-400"
+                          : u.id_rol === 4 ? "bg-blue-400/15 text-blue-400"
+                          : u.id_rol === 5 ? "bg-purple-400/15 text-purple-400"
+                          : "bg-zentinel-text/5 text-zentinel-text-muted"
                         }`}>
-                          {u.rol_descripcion ?? "usuario"}
+                          {u.rol_descripcion ?? ROL_LABELS[u.id_rol] ?? "usuario"}
                         </span>
                       </td>
                       <td className="px-6 py-3 text-center">
@@ -529,6 +591,32 @@ export default function Gestion() {
                   ))}
                 </tbody>
               </table>
+              {/* Paginación */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-zentinel-gold-dark/10 px-6 py-3">
+                  <p className="text-xs text-zentinel-text-muted">
+                    Página <span className="font-semibold text-zentinel-text">{safePage}</span> de{" "}
+                    <span className="font-semibold text-zentinel-text">{totalPages}</span>
+                    {" "}·{" "}{filteredUsuarios.length} usuarios
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                      className="rounded-lg border border-zentinel-gold-dark/20 px-3 py-1.5 text-xs font-semibold text-zentinel-text-muted transition-colors hover:border-zentinel-gold/40 hover:text-zentinel-gold disabled:opacity-40"
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                      className="rounded-lg border border-zentinel-gold-dark/20 px-3 py-1.5 text-xs font-semibold text-zentinel-text-muted transition-colors hover:border-zentinel-gold/40 hover:text-zentinel-gold disabled:opacity-40"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

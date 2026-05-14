@@ -21,6 +21,7 @@ export default function Soporte() {
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [filterEstado, setFilterEstado] = useState<string>("");
 
   useEffect(() => {
     if (!isAuthenticated || !token) {
@@ -148,30 +149,48 @@ export default function Soporte() {
           {loadError}
         </div>
       ) : tickets.length === 0 ? (
-        <div className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-10 text-center">
-          <p className="text-zentinel-text-muted">
-            No tenés tickets aún.{" "}
-            <button
-              onClick={() => setShowForm(true)}
-              className="text-zentinel-gold underline hover:text-zentinel-gold-light"
-            >
-              Abrí uno ahora
-            </button>
-            .
-          </p>
+        <div className="rounded-2xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-12 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-zentinel-gold/8 text-zentinel-gold">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z" />
+            </svg>
+          </div>
+          <p className="font-semibold text-zentinel-text mb-1">No tenés tickets aún</p>
+          <p className="text-sm text-zentinel-text-muted mb-5">Cuando tengas una consulta, acá aparecerán todos tus tickets.</p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-zentinel-gold px-4 py-2 text-sm font-bold text-zentinel-dark transition-colors hover:bg-zentinel-gold-light"
+          >
+            Abrir tu primer ticket
+          </button>
         </div>
       ) : (
         <div className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary shadow-lg shadow-black/20">
-          <div className="flex items-center justify-between border-b border-zentinel-gold-dark/20 px-6 py-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">
-              Mis tickets
-            </h2>
-            <span className="rounded-full bg-zentinel-gold/10 px-3 py-0.5 text-xs text-zentinel-gold">
-              {tickets.length} {tickets.length === 1 ? "ticket" : "tickets"}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zentinel-gold-dark/20 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">Mis tickets</h2>
+              <span className="rounded-full bg-zentinel-gold/10 px-3 py-0.5 text-xs text-zentinel-gold">
+                {tickets.length} {tickets.length === 1 ? "ticket" : "tickets"}
+              </span>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {["", "abierto", "en_progreso", "resuelto", "cerrado"].map((estado) => (
+                <button
+                  key={estado}
+                  onClick={() => setFilterEstado(estado)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                    filterEstado === estado
+                      ? "bg-zentinel-gold text-zentinel-dark"
+                      : "border border-zentinel-gold-dark/25 text-zentinel-text-muted hover:border-zentinel-gold/40 hover:text-zentinel-text"
+                  }`}
+                >
+                  {estado === "" ? "Todos" : estado === "en_progreso" ? "En progreso" : estado.charAt(0).toUpperCase() + estado.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="divide-y divide-zentinel-gold-dark/10">
-            {tickets.map((t) => (
+            {tickets.filter((t) => filterEstado === "" || t.estado === filterEstado).map((t) => (
               <button
                 key={t.id}
                 onClick={() => setSelectedTicketId(t.id)}

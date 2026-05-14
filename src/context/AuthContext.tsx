@@ -28,6 +28,7 @@ interface AuthContextValue {
   isSupport: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (partial: Partial<AuthUser>) => void;
 }
 
 export const AUTH_STORAGE_KEY = "zentinel-web-auth";
@@ -54,6 +55,15 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState | null>(getInitialAuthState);
+
+  const updateUser = useCallback((partial: Partial<AuthUser>) => {
+    setAuthState((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, user: { ...prev.user, ...partial } };
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const login = async (email: string, password: string) => {
     const { token, refreshToken, usuario }: LoginResponse = await loginRequest({ email, password });
@@ -106,8 +116,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isSupport: [2, 5].includes(authState?.user?.id_rol ?? 0),
       login,
       logout,
+      updateUser,
     }),
-    [authState, logout],
+    [authState, logout, updateUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
