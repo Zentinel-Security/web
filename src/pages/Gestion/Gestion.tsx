@@ -6,8 +6,9 @@ import { getUsuariosAdmin, getReportesAdmin, suspenderUsuario, reactivarUsuario,
 import { getAllTicketsAdmin, type TicketConUsuario, type TicketEstado, type TicketTipo } from "../../services/ticketService";
 import { TIPO_LABELS, ESTADO_BADGE, ESTADO_LABELS } from "../Soporte/soporteConstants";
 import AdminTicketDetail from "./components/AdminTicketDetail";
+import PlanesTab from "./components/PlanesTab";
 
-type Tab = "usuarios" | "reportes" | "soporte";
+type Tab = "usuarios" | "reportes" | "soporte" | "planes";
 
 const estadoReporteStyle: Record<string, string> = {
   creado:     "bg-amber-500/15 text-amber-400",
@@ -451,10 +452,20 @@ export default function Gestion() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-zentinel-gold-dark/20 pb-2">
+      <div className="flex flex-wrap gap-2 border-b border-zentinel-gold-dark/20 pb-2">
         <button className={tabClass("usuarios")} onClick={() => setActiveTab("usuarios")}>Usuarios</button>
         <button className={tabClass("reportes")} onClick={() => setActiveTab("reportes")}>Reportes de Dispositivo</button>
         <button className={tabClass("soporte")}  onClick={() => setActiveTab("soporte")}>Tickets de Soporte</button>
+        {isAdmin && (
+          <button className={tabClass("planes")} onClick={() => setActiveTab("planes")}>
+            <span className="flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                <path d="M2.5 3.5A1.5 1.5 0 0 1 4 2h8a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 12 14H4a1.5 1.5 0 0 1-1.5-1.5v-9ZM5 6.5a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5Zm0 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1H5Z" />
+              </svg>
+              Planes
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ── Tab: Usuarios ─────────────────────────────────── */}
@@ -769,6 +780,11 @@ export default function Gestion() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ── Tab: Planes ──────────────────────────────────── */}
+      {activeTab === "planes" && isAdmin && token && (
+        <PlanesTab token={token} />
       )}
 
       {selectedTicketId !== null && token ? (

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { fetchMetricas } from "../../services/metricasService";
+import { getPlanes, type Plan } from "../../services/planesService";
 
 const features = [
   {
@@ -48,47 +49,43 @@ const steps = [
   { step: "03", title: "Viví tranquilo", description: "Zentinel corre en tiempo real. Si algo ocurre, actuamos de inmediato." },
 ];
 
-const plans = [
+const STATIC_PLANS_FALLBACK = [
   {
-    key: "gratuito",
-    name: "Gratuito",
-    highlight: false,
+    key: "gratuito", name: "Gratuito", highlight: false, price: null as string | null,
     features: [
       { text: "Reporte de extravío", included: true },
       { text: "Alertas SOS básicas", included: true },
       { text: "1 grupo de seguridad", included: true },
       { text: "Rastreo en tiempo real", included: false },
-      { text: "Zonas seguras ilimitadas", included: false },
-      { text: "Zentinelas prioritarios", included: false },
     ],
   },
   {
-    key: "premium",
-    name: "Premium",
-    highlight: true,
+    key: "premium", name: "Premium", highlight: true, price: null as string | null,
     features: [
       { text: "Reporte de extravío", included: true },
       { text: "Alertas SOS avanzadas", included: true },
       { text: "Grupos ilimitados", included: true },
       { text: "Rastreo en tiempo real", included: true },
-      { text: "Zonas seguras ilimitadas", included: true },
-      { text: "Zentinelas prioritarios", included: false },
     ],
   },
   {
-    key: "premium_plus",
-    name: "Premium Plus",
-    highlight: false,
+    key: "premium_plus", name: "Premium Plus", highlight: false, price: null as string | null,
     features: [
-      { text: "Reporte de extravío", included: true },
-      { text: "Alertas SOS avanzadas", included: true },
-      { text: "Grupos ilimitados", included: true },
-      { text: "Rastreo en tiempo real", included: true },
-      { text: "Zonas seguras ilimitadas", included: true },
+      { text: "Todo el plan Premium", included: true },
       { text: "Zentinelas prioritarios", included: true },
     ],
   },
 ];
+
+function formatPlanName(name: string) {
+  return name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " ");
+}
+
+function formatPlanPrice(plan: Plan): string {
+  if (plan.price === 0) return "Gratis";
+  const int: Record<string, string> = { mes: "mes", month: "mes", año: "año", year: "año", infinito: "único" };
+  return `$${plan.price.toLocaleString("es-AR")} / ${int[plan.interval] ?? plan.interval}`;
+}
 
 function useCountUp(target: number, duration = 1500) {
   const [count, setCount] = useState(0);
@@ -115,6 +112,16 @@ export default function Home() {
   const counterRef = useRef<HTMLDivElement>(null);
   const [counterVisible, setCounterVisible] = useState(false);
   const displayCount = useCountUp(counterVisible ? totalUsuarios : 0);
+
+  const [apiPlanes, setApiPlanes] = useState<Plan[] | null>(null);
+  const [planesLoading, setPlanesLoading] = useState(true);
+
+  useEffect(() => {
+    getPlanes()
+      .then((p) => setApiPlanes(p))
+      .catch(() => setApiPlanes(null))
+      .finally(() => setPlanesLoading(false));
+  }, []);
 
   useEffect(() => {
     if (!isStaff || !token) return;
@@ -230,47 +237,113 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-3">
-          {plans.map((plan) => (
-            <div
-              key={plan.key}
-              className={`relative rounded-2xl border p-6 flex flex-col gap-5 transition-all ${
-                plan.highlight
-                  ? "border-zentinel-gold bg-zentinel-gold/5 shadow-xl shadow-zentinel-gold/10"
-                  : "border-zentinel-gold-dark/20 bg-zentinel-dark-secondary"
-              }`}
-            >
-              {plan.highlight && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center rounded-full bg-zentinel-gold px-3 py-0.5 text-xs font-bold text-zentinel-dark">
-                    Más popular
-                  </span>
-                </div>
-              )}
-              <div>
-                <h3 className={`text-lg font-extrabold ${ plan.highlight ? "text-zentinel-gold" : "text-zentinel-text"}`}>
-                  {plan.name}
-                </h3>
+        {planesLoading ? (
+          <div className="grid gap-5 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse rounded-2xl border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary p-6 space-y-4">
+                <div className="h-5 w-1/2 rounded bg-zentinel-gold-dark/20" />
+                <div className="h-8 w-1/3 rounded bg-zentinel-gold-dark/15" />
+                <div className="space-y-2">{[1,2,3,4].map((j) => <div key={j} className="h-3 rounded bg-zentinel-gold-dark/10" />)}</div>
               </div>
-              <ul className="space-y-2.5 flex-1">
-                {plan.features.map((f) => (
-                  <li key={f.text} className="flex items-center gap-2.5 text-sm">
-                    {f.included ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-gold flex-shrink-0">
-                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-text-muted/30 flex-shrink-0">
-                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                      </svg>
-                    )}
-                    <span className={f.included ? "text-zentinel-text" : "text-zentinel-text-muted/50"}>{f.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : apiPlanes && apiPlanes.length > 0 ? (
+          <div className="grid gap-5 sm:grid-cols-3">
+            {apiPlanes.map((plan, idx) => {
+              const highlight = idx === 1 && apiPlanes.length >= 3;
+              return (
+                <div
+                  key={plan.id}
+                  className={`relative rounded-2xl border p-6 flex flex-col gap-4 transition-all ${
+                    highlight
+                      ? "border-zentinel-gold bg-zentinel-gold/5 shadow-xl shadow-zentinel-gold/10"
+                      : "border-zentinel-gold-dark/20 bg-zentinel-dark-secondary"
+                  }`}
+                >
+                  {highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="inline-flex items-center rounded-full bg-zentinel-gold px-3 py-0.5 text-xs font-bold text-zentinel-dark">Más popular</span>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className={`text-lg font-extrabold ${highlight ? "text-zentinel-gold" : "text-zentinel-text"}`}>
+                      {formatPlanName(plan.name)}
+                    </h3>
+                    <p className="mt-1 text-2xl font-extrabold text-zentinel-text">
+                      {formatPlanPrice(plan)}
+                    </p>
+                  </div>
+                  {plan.description && (
+                    <p className="text-xs text-zentinel-text-muted leading-relaxed">{plan.description}</p>
+                  )}
+                  {plan.features && plan.features.length > 0 && (
+                    <ul className="space-y-2 flex-1">
+                      {plan.features.map((f) => (
+                        <li key={f.codigo} className="flex items-center gap-2.5 text-sm">
+                          {f.disponible ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-gold flex-shrink-0">
+                              <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-text-muted/30 flex-shrink-0">
+                              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                            </svg>
+                          )}
+                          <span className={f.disponible ? "text-zentinel-text" : "text-zentinel-text-muted/50"}>
+                            {f.nombre}
+                            {f.tipo_limite === "numeric" && f.valor !== null && f.valor !== undefined && (
+                              <span className="ml-1 font-semibold text-zentinel-gold">
+                                {f.valor === -1 ? "(∞)" : `(${f.valor})`}
+                              </span>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-3">
+            {STATIC_PLANS_FALLBACK.map((plan) => (
+              <div
+                key={plan.key}
+                className={`relative rounded-2xl border p-6 flex flex-col gap-5 transition-all ${
+                  plan.highlight
+                    ? "border-zentinel-gold bg-zentinel-gold/5 shadow-xl shadow-zentinel-gold/10"
+                    : "border-zentinel-gold-dark/20 bg-zentinel-dark-secondary"
+                }`}
+              >
+                {plan.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center rounded-full bg-zentinel-gold px-3 py-0.5 text-xs font-bold text-zentinel-dark">Más popular</span>
+                  </div>
+                )}
+                <div>
+                  <h3 className={`text-lg font-extrabold ${plan.highlight ? "text-zentinel-gold" : "text-zentinel-text"}`}>{plan.name}</h3>
+                </div>
+                <ul className="space-y-2.5 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f.text} className="flex items-center gap-2.5 text-sm">
+                      {f.included ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-gold flex-shrink-0">
+                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-zentinel-text-muted/30 flex-shrink-0">
+                          <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                        </svg>
+                      )}
+                      <span className={f.included ? "text-zentinel-text" : "text-zentinel-text-muted/50"}>{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}

@@ -20,7 +20,7 @@ export interface MetricasData {
     zona_mes: number;
     panico_mes: number;
   };
-  planes: { plan: string; cantidad: number }[];
+  planes: { plan: string; cantidad: number; activo: boolean }[];
   tickets: {
     total: number;
     resueltos: number;

@@ -39,19 +39,12 @@ const IconPanic = () => (
   </svg>
 );
 
-const PLAN_COLORS: Record<string, string> = {
-  gratuito: "#6b7280",
-  premium: "#3b82f6",
-  premium_plus: "#fbbf24",
-};
+const PIE_PALETTE = ["#6b7280","#3b82f6","#fbbf24","#10b981","#f97316","#8b5cf6","#ef4444","#06b6d4"];
 
-const PLAN_LABELS: Record<string, string> = {
-  gratuito: "Gratuito",
-  premium: "Premium",
-  premium_plus: "Premium Plus",
-};
+const formatPlanLabel = (name: string) =>
+  name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-function PieChart({ data }: { data: { plan: string; cantidad: number }[] }) {
+function PieChart({ data }: { data: { plan: string; cantidad: number; color?: string }[] }) {
   const total = data.reduce((acc, d) => acc + d.cantidad, 0);
   if (total === 0) {
     return (
@@ -85,7 +78,7 @@ function PieChart({ data }: { data: { plan: string; cantidad: number }[] }) {
             <circle
               key={s.plan}
               cx="50" cy="50" r={r}
-              fill={PLAN_COLORS[s.plan] ?? "#6b7280"}
+              fill={s.color ?? "#6b7280"}
               opacity={0.85}
             />
           );
@@ -103,7 +96,7 @@ function PieChart({ data }: { data: { plan: string; cantidad: number }[] }) {
           <path
             key={s.plan}
             d={path}
-            fill={PLAN_COLORS[s.plan] ?? "#6b7280"}
+            fill={s.color ?? "#6b7280"}
             opacity={0.85}
           />
         );
@@ -312,42 +305,65 @@ export default function Metricas() {
             </div>
           ) : data ? (
             (() => {
-              const totalPlanes = data.planes.reduce((a, b) => a + b.cantidad, 0);
-              const pagos = data.planes
+              const activePlanes = data.planes.filter((p) => p.activo);
+              const inactivePlanes = data.planes.filter((p) => !p.activo);
+              const totalActivos = activePlanes.reduce((a, b) => a + b.cantidad, 0);
+              const totalInactivos = inactivePlanes.reduce((a, b) => a + b.cantidad, 0);
+              const pagos = activePlanes
                 .filter((p) => p.plan !== "gratuito")
                 .reduce((a, b) => a + b.cantidad, 0);
-              const conversionRate = totalPlanes > 0 ? ((pagos / totalPlanes) * 100).toFixed(1) : "0";
+              const conversionRate = totalActivos > 0 ? ((pagos / totalActivos) * 100).toFixed(1) : "0";
+              const pieData = activePlanes.map((p, i) => ({ ...p, color: PIE_PALETTE[i % PIE_PALETTE.length] }));
               return (
                 <div className="space-y-5">
                   <div className="flex flex-col sm:flex-row items-center gap-8">
-                    <PieChart data={data.planes} />
-                    <ul className="space-y-3 w-full">
-                      {data.planes.map((p) => {
-                        const pct = totalPlanes > 0 ? ((p.cantidad / totalPlanes) * 100).toFixed(1) : "0";
-                        return (
-                          <li key={p.plan} className="flex items-center justify-between gap-3">
+                    <PieChart data={pieData} />
+                    <div className="w-full space-y-1">
+                      <ul className="space-y-2.5">
+                        {pieData.map((p) => {
+                          const pct = totalActivos > 0 ? ((p.cantidad / totalActivos) * 100).toFixed(1) : "0";
+                          return (
+                            <li key={p.plan} className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="h-3 w-3 flex-shrink-0 rounded-full"
+                                  style={{ backgroundColor: p.color }}
+                                />
+                                <span className="text-sm text-zentinel-text truncate">
+                                  {formatPlanLabel(p.plan)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-sm font-bold text-zentinel-text">{p.cantidad}</span>
+                                <span className="text-xs text-zentinel-text-muted">({pct}%)</span>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {inactivePlanes.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-zentinel-gold-dark/10">
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span
-                                className="h-3 w-3 flex-shrink-0 rounded-full"
-                                style={{ backgroundColor: PLAN_COLORS[p.plan] ?? "#6b7280" }}
-                              />
-                              <span className="text-sm text-zentinel-text truncate">
-                                {PLAN_LABELS[p.plan] ?? p.plan}
+                              <span className="h-3 w-3 flex-shrink-0 rounded-full bg-zinc-600/50" />
+                              <span className="text-xs text-zentinel-text-muted/60">
+                                Planes inactivos ({inactivePlanes.length})
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className="text-sm font-bold text-zentinel-text">{p.cantidad}</span>
-                              <span className="text-xs text-zentinel-text-muted">({pct}%)</span>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                            {totalInactivos > 0 && (
+                              <span className="text-xs text-zentinel-text-muted/60 flex-shrink-0">
+                                {totalInactivos} usuario{totalInactivos !== 1 ? "s" : ""}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="rounded-lg border border-zentinel-gold/30 bg-zentinel-gold/5 px-4 py-3 flex items-center justify-between">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">Tasa de conversión a pago</p>
-                      <p className="text-xs text-zentinel-text-muted mt-0.5">{pagos} de {totalPlanes} usuarios en plan pago</p>
+                      <p className="text-xs text-zentinel-text-muted mt-0.5">{pagos} de {totalActivos} usuarios en plan pago</p>
                     </div>
                     <p className="text-3xl font-extrabold text-zentinel-gold">{conversionRate}%</p>
                   </div>
