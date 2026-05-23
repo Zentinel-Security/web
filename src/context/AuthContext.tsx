@@ -12,7 +12,7 @@ import {
   type AuthUser,
   type LoginResponse,
 } from "../services/authService";
-import { UNAUTHORIZED_EVENT } from '../utils/apiFetch';
+import { UNAUTHORIZED_EVENT, TOKEN_REFRESHED_EVENT, AUTH_STORAGE_KEY } from '../utils/apiFetch';
 
 interface AuthState {
   token: string;
@@ -26,14 +26,12 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isStaff: boolean;
   isSupport: boolean;
+  sessionExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (partial: Partial<AuthUser>) => void;
+  clearSessionExpired: () => void;
 }
-
-export const AUTH_STORAGE_KEY = "zentinel-web-auth";
-
-let isAlerting = false; // Flag para deduplicar alertas
 
 const getInitialAuthState = (): AuthState | null => {
   try {
@@ -55,6 +53,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState | null>(getInitialAuthState);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const updateUser = useCallback((partial: Partial<AuthUser>) => {
     setAuthState((prev) => {
@@ -83,28 +82,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAuthState(null);
   }, []);
 
-  // 2. NUEVO: El "oído" que escucha a apiFetch
+  const clearSessionExpired = useCallback(() => setSessionExpired(false), []);
+
+  // 2. Listeners: eventos de apiFetch + sincronización multi-pestaña vía localStorage
   useEffect(() => {
     const handleUnauthorized = () => {
-      if (isAlerting) return;
-      isAlerting = true;
-
-      console.warn("Sesión expirada o inválida. Cerrando sesión por seguridad.");
-      // 1. Cerramos la sesión en el estado
       logout();
+      setSessionExpired(true);
+    };
 
-      // 2. Feedback visual inmediato para el usuario
-      alert("Tu sesión ha expirado por inactividad o seguridad. Por favor, vuelve a iniciar sesión.");
+    const handleTokenRefreshed = (e: Event) => {
+      const { token } = (e as CustomEvent<{ token: string }>).detail;
+      setAuthState((prev) => (prev ? { ...prev, token } : prev));
+    };
 
-      // 3. Lo expulsamos a la pantalla de inicio (útil si estaba metido en /gestion)
-      window.location.hash = "/";
-
-      // 4. Liberamos el flag
-      setTimeout(() => { isAlerting = false; }, 2000);
+    // Si otra pestaña elimina la clave de auth (logout manual), sincronizamos silenciosamente
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === AUTH_STORAGE_KEY && e.newValue === null) {
+        setAuthState(null);
+        setSessionExpired(false);
+      }
     };
 
     window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
-    return () => window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+    window.addEventListener(TOKEN_REFRESHED_EVENT, handleTokenRefreshed);
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);
+      window.removeEventListener(TOKEN_REFRESHED_EVENT, handleTokenRefreshed);
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, [logout]);
 
   const value = useMemo<AuthContextValue>(
@@ -114,11 +121,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated: Boolean(authState?.token),
       isStaff: [2, 4, 5].includes(authState?.user?.id_rol ?? 0),
       isSupport: [2, 5].includes(authState?.user?.id_rol ?? 0),
+      sessionExpired,
       login,
       logout,
       updateUser,
+      clearSessionExpired,
     }),
-    [authState, logout, updateUser],
+    [authState, logout, updateUser, sessionExpired, clearSessionExpired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

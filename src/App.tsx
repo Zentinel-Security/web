@@ -10,6 +10,7 @@ import Gestion from "./pages/Gestion/Gestion";
 import Soporte from "./pages/Soporte/Soporte";
 import Perfil from "./pages/Perfil/Perfil";
 import { useAuth } from "./context/AuthContext";
+import LoginModal from "./components/auth/LoginModal";
 import { useEffect, useRef } from "react";
 
 function AnimatedRoutes({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,8 @@ function AuthOnlyRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { sessionExpired, clearSessionExpired } = useAuth();
+
   return (
     <HashRouter>
       <div className="flex flex-col min-h-screen w-full">
@@ -62,6 +65,13 @@ function App() {
         </main>
         <Footer />
       </div>
+      <LoginModal
+        isOpen={sessionExpired}
+        onClose={clearSessionExpired}
+        onSuccess={clearSessionExpired}
+        title="Sesión expirada"
+        subtitle="Tu sesión venció por inactividad. Vuelve a ingresar para continuar."
+      />
     </HashRouter>
   );
 }
