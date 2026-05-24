@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { fetchMetricas, type MetricasData } from "../../services/metricasService";
+import MetricasHistorico from "./MetricasHistorico";
 
 const IconUsers = () => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
@@ -147,7 +148,7 @@ function SkeletonCard() {
   );
 }
 
-export default function Metricas() {
+function MetricasTiempoReal() {
   const { token } = useAuth();
   const [data, setData] = useState<MetricasData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -186,14 +187,11 @@ export default function Metricas() {
 
   return (
     <div className="space-y-8">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-zentinel-gold">Métricas del Sistema</h1>
-          <p className="mt-1 text-zentinel-text-muted text-sm">
-            Panel de control · datos al{" "}
-            <span className="text-zentinel-gold">{updatedAt}</span>
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-zentinel-text-muted text-sm">
+          Datos al{" "}
+          <span className="text-zentinel-gold font-semibold">{updatedAt}</span>
+        </p>
         <button
           onClick={refresh}
           disabled={loading}
@@ -204,7 +202,7 @@ export default function Metricas() {
           </svg>
           Actualizar
         </button>
-      </header>
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
@@ -420,6 +418,77 @@ export default function Metricas() {
           ) : null}
         </div>
       </section>
+    </div>
+  );
+}
+
+// ─── Wrapper con tabs ───────────────────────────────────────────────
+
+type TabId = "tiempo-real" | "historico";
+
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  {
+    id: "tiempo-real",
+    label: "Tiempo Real",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5 9 8.25 13.5 12.75 20.25 6" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6h6v6" />
+      </svg>
+    ),
+  },
+  {
+    id: "historico",
+    label: "Análisis Histórico",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+      </svg>
+    ),
+  },
+];
+
+export default function Metricas() {
+  const [activeTab, setActiveTab] = useState<TabId>("tiempo-real");
+
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold text-zentinel-gold">Métricas del Sistema</h1>
+        <p className="mt-1 text-zentinel-text-muted text-sm">
+          Panel de control y análisis de la plataforma
+        </p>
+      </header>
+
+      {/* Tabs */}
+      <div className="border-b border-zentinel-gold-dark/20">
+        <nav className="flex gap-1 -mb-px">
+          {TABS.map((t) => {
+            const active = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-all ${
+                  active
+                    ? "border-zentinel-gold text-zentinel-gold"
+                    : "border-transparent text-zentinel-text-muted hover:text-zentinel-text hover:border-zentinel-gold-dark/40"
+                }`}
+                aria-selected={active}
+                role="tab"
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Contenido de la tab activa */}
+      <div role="tabpanel">
+        {activeTab === "tiempo-real" ? <MetricasTiempoReal /> : <MetricasHistorico />}
+      </div>
     </div>
   );
 }
