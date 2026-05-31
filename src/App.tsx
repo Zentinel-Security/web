@@ -12,6 +12,8 @@ import Perfil from "./pages/Perfil/Perfil";
 import { useAuth } from "./context/AuthContext";
 import LoginModal from "./components/auth/LoginModal";
 import { useEffect, useRef } from "react";
+import VerificarEmail from "./pages/VerificarEmail/VerificarEmail";
+import ResetearContrasena from "./pages/ResetearContrasena/ResetearContrasena";
 
 function AnimatedRoutes({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -59,6 +61,8 @@ function App() {
             <Route path="/soporte" element={<Soporte />} />
             <Route path="/manual" element={<Manual />} />
             <Route path="/perfil" element={<AuthOnlyRoute><Perfil /></AuthOnlyRoute>} />
+            <Route path="/verificar-email" element={<VerificarEmail />} />
+            <Route path="/resetear-contrasena" element={<ResetearContrasena />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </AnimatedRoutes>
