@@ -29,6 +29,55 @@ type RawLoginResponse = {
   usuario?: AuthUser;
   message?: string;
   error?: string;
+  code?: string;
+};
+
+export const verificarEmailRequest = async (token: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/auth/verificar-email?token=${encodeURIComponent(token)}`);
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(data?.error || 'Error al verificar el email.');
+    (error as any).code = data?.code;
+    throw error;
+  }
+};
+
+export const reenviarVerificacionRequest = async (email: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/auth/reenviar-verificacion`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || 'Error al reenviar el correo.');
+  }
+};
+
+export const olvideContrasenaRequest = async (email: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/auth/olvide-contrasena`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || 'Error al enviar el correo.');
+  }
+};
+
+export const resetearContrasenaRequest = async (token: string, nuevaContrasena: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/auth/resetear-contrasena`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, nuevaContrasena }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(data?.error || 'Error al restablecer la contraseña.');
+    (error as any).code = data?.code;
+    throw error;
+  }
 };
 
 export const loginRequest = async ({ email, password }: LoginPayload): Promise<LoginResponse> => {
@@ -51,7 +100,9 @@ export const loginRequest = async ({ email, password }: LoginPayload): Promise<L
       data?.message ||
       data?.error ||
       "No se pudo iniciar sesión. Revisa tus credenciales.";
-    throw new Error(message);
+    const err = new Error(message);
+    (err as any).code = data?.code;
+    throw err;
   }
 
   const token = data?.access_token ?? data?.token;
