@@ -76,24 +76,36 @@ interface KpiCardProps {
 }
 
 function KpiCard({ label, value, sub, delta, hint }: KpiCardProps) {
+  const [hintOpen, setHintOpen] = useState(false);
   const showDelta = delta !== undefined;
   const positive = (delta ?? 0) > 0;
   const negative = (delta ?? 0) < 0;
   const neutral = delta === 0;
 
   return (
-    <div className="zentinel-card p-5 flex flex-col gap-2 transition-transform duration-200 hover:-translate-y-0.5">
+    <div className="zentinel-card p-5 flex flex-col gap-2 transition-transform duration-200 hover:-translate-y-0.5 relative">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">
           {label}
         </p>
         {hint && (
-          <span
-            title={hint}
-            className="text-zentinel-text-muted/60 cursor-help text-xs select-none"
+          <div
+            className="relative"
+            onMouseEnter={() => setHintOpen(true)}
+            onMouseLeave={() => setHintOpen(false)}
           >
-            ⓘ
-          </span>
+            <button
+              type="button"
+              className="text-zentinel-text-muted/50 hover:text-zentinel-gold transition-colors text-xs select-none shrink-0 leading-none mt-0.5"
+            >
+              ⓘ
+            </button>
+            {hintOpen && (
+              <div className="absolute bottom-full right-0 mb-2 z-50 w-60 rounded-lg border border-zentinel-gold-dark/25 bg-zentinel-dark-secondary shadow-xl p-3 text-xs text-zentinel-text-muted leading-relaxed">
+                <p>{hint}</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
       <p className="text-3xl font-extrabold text-zentinel-text leading-none">{value}</p>
@@ -521,59 +533,59 @@ export default function MetricasHistorico() {
                 label="Usuarios nuevos"
                 value={`+${formatNumero(data.resumen.total_usuarios_nuevos)}`}
                 sub="registros en el período"
-                hint="vs período anterior de igual duración"
+                hint="Cantidad de usuarios que se registraron por primera vez durante el período seleccionado. Se compara contra el período anterior de igual duración."
                 delta={data.resumen.delta_usuarios_nuevos}
               />
               <KpiCard
                 label="Usuarios activos"
-                value={`${formatNumero(data.resumen.mau_promedio)} /mes`}
-                sub="promedio de sesiones activas por mes"
+                value={formatNumero(data.resumen.mau_promedio)}
+                sub="activos por mes en promedio"
                 delta={data.resumen.delta_mau}
-                hint="vs período anterior de igual duración"
+                hint="Usuarios únicos con al menos una sesión activa por mes, promediado sobre todos los meses del período seleccionado. Si elegís 6 meses, es el promedio de los 6 valores mensuales."
               />
               <KpiCard
                 label="Ingresos del período"
                 value={formatMoneda(data.resumen.ingresos_periodo)}
                 sub="pagos cobrados (Mercado Pago)"
-                hint="vs período anterior de igual duración"
+                hint="Suma de todos los pagos aprobados via Mercado Pago durante el período seleccionado. Se compara contra el período anterior de igual duración."
                 delta={data.resumen.delta_ingresos}
               />
               <KpiCard
                 label="Usuarios de pago"
                 value={`${data.resumen.tasa_conversion_promedio.toFixed(1)}%`}
                 sub="del total de registrados con plan pago activo"
-                hint="Último mes del período vs mes anterior"
+                hint="Porcentaje de usuarios registrados que tienen un plan pago activo. Es el promedio mensual del período. El delta compara el último mes del período contra el mes anterior."
                 delta={data.resumen.delta_conversion}
               />
               <KpiCard
                 label="Tickets abiertos"
                 value={formatNumero(data.resumen.tickets_abiertos_periodo)}
                 sub="creados en el período"
-                hint="vs período anterior de igual duración"
+                hint="Cantidad total de tickets de soporte abiertos durante el período seleccionado. Se compara contra el período anterior de igual duración."
                 delta={data.resumen.delta_tickets_abiertos}
               />
               <KpiCard
                 label="Suscripciones nuevas"
                 value={`+${formatNumero(data.resumen.nuevas_suscripciones_periodo)}`}
                 sub="planes pagos iniciados en el período"
-                hint="vs período anterior de igual duración"
+                hint="Cantidad de suscripciones a planes pagos que comenzaron durante el período seleccionado. Se compara contra el período anterior de igual duración."
                 delta={data.resumen.delta_nuevas_suscripciones}
               />
               <KpiCard
-                label="Retención mensual"
+                label="Retención de usuarios"
                 value={
                   data.resumen.tasa_retencion_promedio !== null
                     ? `${data.resumen.tasa_retencion_promedio.toFixed(1)}%`
                     : `—`
                 }
-                sub="usuarios activos que vuelven mes a mes"
-                hint="promedio del período · activos este mes que también lo fueron el anterior"
+                sub="promedio mensual del período seleccionado"
+                hint="De los usuarios activos en un mes, qué porcentaje también estuvo activo el mes anterior. Se calcula mes a mes y se promedia sobre el período seleccionado. Un valor alto indica buena fidelización."
               />
               <KpiCard
                 label="Usuarios perdidos"
                 value={formatNumero(data.resumen.usuarios_perdidos)}
-                sub="activos el período anterior que no volvieron en este"
-                hint="indica abandono: cuantos dejaron de usar la app en el período actual"
+                sub="activos antes que no volvieron en este período"
+                hint="Usuarios que tuvieron actividad en el período anterior pero no registraron ninguna sesión en el período actual. Indica abandono o churn de la app."
               />
             </>
           ) : null}
