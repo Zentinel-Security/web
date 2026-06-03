@@ -48,22 +48,77 @@ export const getReportesAdmin = async (
   return (json as { reportes: ReporteDispositivoAdmin[] }).reportes;
 };
 
-export const suspenderUsuario = async (token: string, idUsuario: number): Promise<void> => {
+export const suspenderUsuario = async (token: string, idUsuario: number, motivo: string): Promise<void> => {
   const response = await apiFetch(`${API_BASE_URL}/usuarios/${idUsuario}/suspender`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ motivo }),
   });
   const json = await response.json().catch(() => null);
   if (!response.ok) throw new Error(json?.error ?? "Error al suspender usuario");
 };
 
-export const reactivarUsuario = async (token: string, idUsuario: number): Promise<void> => {
+export const reactivarUsuario = async (token: string, idUsuario: number, motivo: string): Promise<void> => {
   const response = await apiFetch(`${API_BASE_URL}/usuarios/${idUsuario}/reactivar`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ motivo }),
   });
   const json = await response.json().catch(() => null);
   if (!response.ok) throw new Error(json?.error ?? "Error al reactivar usuario");
+};
+
+export interface AuditLogEntry {
+  id: number;
+  tipo_evento: string;
+  motivo: string | null;
+  datos_anteriores: Record<string, unknown> | null;
+  datos_nuevos: Record<string, unknown> | null;
+  created_at: string;
+  actor_id: number;
+  actor_nombre: string;
+  actor_email: string;
+  objetivo_usuario_id: number | null;
+  objetivo_usuario_nombre: string | null;
+  objetivo_usuario_email: string | null;
+  objetivo_plan_id: number | null;
+  objetivo_plan_nombre: string | null;
+  objetivo_ticket_id: number | null;
+  objetivo_ticket_asunto: string | null;
+}
+
+export interface AuditLogResult {
+  data: AuditLogEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const getAuditLog = async (
+  token: string,
+  params?: {
+    tipo_evento?: string;
+    id_actor?: number;
+    fecha_desde?: string;
+    fecha_hasta?: string;
+    page?: number;
+    limit?: number;
+  },
+): Promise<AuditLogResult> => {
+  const query = new URLSearchParams();
+  if (params?.tipo_evento) query.set("tipo_evento", params.tipo_evento);
+  if (params?.id_actor)    query.set("id_actor",    String(params.id_actor));
+  if (params?.fecha_desde) query.set("fecha_desde", params.fecha_desde);
+  if (params?.fecha_hasta) query.set("fecha_hasta", params.fecha_hasta);
+  if (params?.page)        query.set("page",        String(params.page));
+  if (params?.limit)       query.set("limit",       String(params.limit));
+
+  const url = `${API_BASE_URL}/admin/auditoria${query.toString() ? `?${query.toString()}` : ""}`;
+  const response = await apiFetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const json = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(json?.message ?? "Error al obtener el log de auditoría");
+  return json as AuditLogResult;
 };
 
 export const cambiarRolUsuario = async (token: string, idUsuario: number, idRol: number): Promise<UsuarioAdmin> => {

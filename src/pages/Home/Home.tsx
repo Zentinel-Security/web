@@ -166,7 +166,7 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            to="/reportes"
+            to="/extravios"
             className="inline-flex items-center gap-2 rounded-xl bg-zentinel-gold px-7 py-3 text-sm font-bold text-zentinel-dark transition-all hover:bg-zentinel-gold-light hover:scale-105 shadow-lg shadow-zentinel-gold/25"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">

@@ -174,6 +174,7 @@ export const cambiarEstadoTicket = async (
   token: string,
   idTicket: number,
   estado: TicketEstado,
+  motivo?: string,
 ): Promise<{ ticket: Ticket }> => {
   const response = await apiFetch(
     `${API_BASE_URL}/soporte/admin/tickets/${idTicket}/estado`,
@@ -183,7 +184,7 @@ export const cambiarEstadoTicket = async (
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ estado }),
+      body: JSON.stringify({ estado, ...(motivo ? { motivo } : {}) }),
     },
   );
 

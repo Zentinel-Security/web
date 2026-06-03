@@ -213,7 +213,7 @@ export default function Inicio() {
       {!isAccountSuspended && !isAccountRecovered && (
         <div className="mb-10 text-center sm:text-left">
           <h1 className="text-3xl font-bold text-zentinel-gold sm:text-5xl mb-4 tracking-tight">
-            Centro de Reportes
+            Centro de Extravíos
           </h1>
           <p className="text-lg text-zentinel-text-muted max-w-2xl">
             Si has perdido tu dispositivo con Zentinel instalado, es vital actuar rápido. Reporta el incidente para iniciar inmediatamente los protocolos de seguridad y rastreo.
@@ -384,7 +384,7 @@ export default function Inicio() {
                 onClick={() => setIsAccountRecovered(false)}
                 className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-6 py-2.5 text-sm font-semibold text-emerald-200 transition-colors hover:bg-emerald-500/20 shadow-sm"
               >
-                Volver al Centro de Reportes
+                Volver al Centro de Extravíos
               </button>
             </div>
           </div>

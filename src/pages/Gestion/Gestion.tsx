@@ -7,8 +7,9 @@ import { getAllTicketsAdmin, type TicketConUsuario, type TicketEstado, type Tick
 import { TIPO_LABELS, ESTADO_BADGE, ESTADO_LABELS } from "../Soporte/soporteConstants";
 import AdminTicketDetail from "./components/AdminTicketDetail";
 import PlanesTab from "./components/PlanesTab";
+import AuditoriaTab from "./components/AuditoriaTab";
 
-type Tab = "usuarios" | "reportes" | "soporte" | "planes";
+type Tab = "usuarios" | "reportes" | "soporte" | "planes" | "auditoria";
 
 const estadoReporteStyle: Record<string, string> = {
   creado:     "bg-amber-500/15 text-amber-400",
@@ -66,6 +67,7 @@ export default function Gestion() {
   // ─── User detail modal ───────────────────────────────────────
   const [selectedUser, setSelectedUser] = useState<UsuarioAdmin | null>(null);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
+  const [motivoInput, setMotivoInput] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [rolCambio, setRolCambio] = useState<number | "">("");
 
@@ -75,6 +77,7 @@ export default function Gestion() {
   const closeModal = () => {
     setSelectedUser(null);
     setConfirmSuspend(false);
+    setMotivoInput("");
     setRolCambio("");
   };
 
@@ -167,14 +170,15 @@ export default function Gestion() {
   };
 
   const handleSuspend = async () => {
-    if (!selectedUser || !token) return;
+    if (!selectedUser || !token || !motivoInput.trim()) return;
     setActionLoading(true);
     try {
-      await suspenderUsuario(token, selectedUser.id);
+      await suspenderUsuario(token, selectedUser.id, motivoInput.trim());
       const updated: UsuarioAdmin = { ...selectedUser, estado_cuenta: "suspendida", activo: false };
       setUsuarios((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)));
       setSelectedUser(updated);
       setConfirmSuspend(false);
+      setMotivoInput("");
       showToast(`La cuenta de ${selectedUser.nombre} ${selectedUser.apellido} fue suspendida.`, "success");
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al suspender usuario", "error");
@@ -184,13 +188,14 @@ export default function Gestion() {
   };
 
   const handleReactivar = async () => {
-    if (!selectedUser || !token) return;
+    if (!selectedUser || !token || !motivoInput.trim()) return;
     setActionLoading(true);
     try {
-      await reactivarUsuario(token, selectedUser.id);
+      await reactivarUsuario(token, selectedUser.id, motivoInput.trim());
       const updated: UsuarioAdmin = { ...selectedUser, estado_cuenta: "activa", activo: true };
       setUsuarios((prev) => prev.map((u) => (u.id === selectedUser.id ? updated : u)));
       setSelectedUser(updated);
+      setMotivoInput("");
       showToast(`La cuenta de ${selectedUser.nombre} ${selectedUser.apellido} fue reactivada.`, "success");
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Error al reactivar usuario", "error");
@@ -367,15 +372,45 @@ export default function Gestion() {
                 </div>
               )}
 
-              {/* Confirm suspend warning */}
+              {/* Confirm suspend / reactivar with motivo input */}
               {confirmSuspend && (
-                <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                  </svg>
-                  <p className="text-sm text-red-300 leading-relaxed">
-                    ¿Suspender a <span className="font-semibold">{selectedUser.nombre} {selectedUser.apellido}</span>? No podrá iniciar sesión hasta ser reactivado.
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/8 px-4 py-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                    <p className="text-sm text-red-300 leading-relaxed">
+                      ¿Suspender a <span className="font-semibold">{selectedUser.nombre} {selectedUser.apellido}</span>? No podrá iniciar sesión hasta ser reactivado.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted mb-1.5">
+                      Motivo <span className="text-red-400">*</span>
+                    </label>
+                    <textarea
+                      value={motivoInput}
+                      onChange={(e) => setMotivoInput(e.target.value)}
+                      placeholder="Describí el motivo de la suspensión…"
+                      rows={3}
+                      className="w-full rounded-lg border border-zentinel-gold-dark/25 bg-zentinel-bg px-3 py-2 text-sm text-zentinel-text placeholder:text-zentinel-text-muted/50 focus:outline-none focus:border-zentinel-gold/50 resize-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Motivo input for reactivar (no confirmSuspend, user is inactive) */}
+              {!confirmSuspend && !selectedUser.activo && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted mb-1.5">
+                    Motivo de reactivación <span className="text-red-400">*</span>
+                  </label>
+                  <textarea
+                    value={motivoInput}
+                    onChange={(e) => setMotivoInput(e.target.value)}
+                    placeholder="Describí el motivo de la reactivación…"
+                    rows={3}
+                    className="w-full rounded-lg border border-zentinel-gold-dark/25 bg-zentinel-bg px-3 py-2 text-sm text-zentinel-text placeholder:text-zentinel-text-muted/50 focus:outline-none focus:border-zentinel-gold/50 resize-none"
+                  />
                 </div>
               )}
             </div>
@@ -390,10 +425,10 @@ export default function Gestion() {
                 <div className="flex gap-2">
                   {confirmSuspend ? (
                     <>
-                      <button onClick={() => setConfirmSuspend(false)} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5 disabled:opacity-50">
+                      <button onClick={() => { setConfirmSuspend(false); setMotivoInput(""); }} disabled={actionLoading} className="rounded-lg border border-zentinel-gold-dark/30 px-4 py-2 text-sm text-zentinel-text-muted transition-colors hover:bg-zentinel-text/5 disabled:opacity-50">
                         Cancelar
                       </button>
-                      <button onClick={handleSuspend} disabled={actionLoading} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50">
+                      <button onClick={handleSuspend} disabled={actionLoading || !motivoInput.trim()} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50">
                         {actionLoading ? "Suspendiendo…" : "Sí, suspender"}
                       </button>
                     </>
@@ -410,7 +445,7 @@ export default function Gestion() {
                   ) : (
                     <button
                       onClick={handleReactivar}
-                      disabled={actionLoading}
+                      disabled={actionLoading || !motivoInput.trim()}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 transition-all hover:border-green-500/50 hover:bg-green-500/20 disabled:opacity-50"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -429,7 +464,7 @@ export default function Gestion() {
       <header>
         <h1 className="text-3xl font-bold text-zentinel-gold">Gestión de Backoffice</h1>
         <p className="mt-2 text-zentinel-text-muted">
-          Administración centralizada de usuarios, reportes y tickets de soporte.
+          Administración centralizada de usuarios, extravíos y tickets de soporte.
         </p>
       </header>
 
@@ -438,7 +473,7 @@ export default function Gestion() {
         {[
           { label: "Usuarios",          value: totalUsuarios   || "—", color: "text-zentinel-text" },
           { label: "Suspendidos",        value: suspendidos     || "—", color: "text-red-400" },
-          { label: "Reportes activos",   value: reportesActivos || "—", color: "text-amber-400" },
+          { label: "Extravíos activos",  value: reportesActivos || "—", color: "text-amber-400" },
           { label: "Tickets abiertos",   value: ticketsAbiertos || "—", color: "text-zentinel-gold" },
         ].map((s) => (
           <div
@@ -453,19 +488,49 @@ export default function Gestion() {
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-zentinel-gold-dark/20 pb-2">
-        <button className={tabClass("usuarios")} onClick={() => setActiveTab("usuarios")}>Usuarios</button>
-        <button className={tabClass("reportes")} onClick={() => setActiveTab("reportes")}>Reportes de Dispositivo</button>
-        <button className={tabClass("soporte")}  onClick={() => setActiveTab("soporte")}>Tickets de Soporte</button>
+        <button className={tabClass("usuarios")} onClick={() => setActiveTab("usuarios")}>
+          <span className="flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 0 0-11.215 0c-.22.578.254 1.139.872 1.139h9.47Z" />
+            </svg>
+            Usuarios
+          </span>
+        </button>
+        <button className={tabClass("reportes")} onClick={() => setActiveTab("reportes")}>
+          <span className="flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+              <path fillRule="evenodd" d="m7.539 14.841.003.003.002.002a.755.755 0 0 0 .912 0l.002-.002.003-.003.012-.009a5.57 5.57 0 0 0 .19-.153 15.588 15.588 0 0 0 2.046-2.082c1.101-1.362 2.291-3.342 2.291-5.597A5 5 0 0 0 3 7c0 2.255 1.19 4.235 2.292 5.597a15.591 15.591 0 0 0 2.046 2.082 8.916 8.916 0 0 0 .189.153l.012.01ZM8 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" clipRule="evenodd" />
+            </svg>
+            Extravíos
+          </span>
+        </button>
+        <button className={tabClass("soporte")} onClick={() => setActiveTab("soporte")}>
+          <span className="flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+              <path fillRule="evenodd" d="M1 8.74C1 11.205 3.168 13 5.5 13c.99 0 2.042-.322 2.894-.868l.001-.001 3.055 1.02a.75.75 0 0 0 .946-.945l-1.02-3.054.002-.002c.546-.852.622-1.84.622-2.651C12 4.147 9.629 2 7 2S1 4.456 1 7.25v1.49Z" clipRule="evenodd" />
+            </svg>
+            Tickets de Soporte
+          </span>
+        </button>
         {isAdmin && (
           <button className={tabClass("planes")} onClick={() => setActiveTab("planes")}>
             <span className="flex items-center gap-1.5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
-                <path d="M2.5 3.5A1.5 1.5 0 0 1 4 2h8a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 12 14H4a1.5 1.5 0 0 1-1.5-1.5v-9ZM5 6.5a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5Zm0 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1H5Z" />
+                <path d="M8.5 1.866a1 1 0 0 0-1 0L1.68 5.25a.75.75 0 0 0 0 1.3l5.82 3.384a1 1 0 0 0 1 0l5.82-3.384a.75.75 0 0 0 0-1.3L8.5 1.866Z" />
+                <path d="m1.68 8.9 5.82 3.384a1 1 0 0 0 1 0L14.32 8.9a.75.75 0 0 0 0-1.3L8.5 11.016a1 1 0 0 1-1 0L1.68 7.6a.75.75 0 0 0 0 1.3Z" />
               </svg>
               Planes
             </span>
           </button>
         )}
+        <button className={tabClass("auditoria")} onClick={() => setActiveTab("auditoria")}>
+          <span className="flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+              <path d="M9.25 1a6.25 6.25 0 1 0 3.916 11.126l2.604 2.603a.75.75 0 0 0 1.06-1.06l-2.603-2.604A6.25 6.25 0 0 0 9.25 1ZM4.5 7.25a4.75 4.75 0 1 1 9.5 0 4.75 4.75 0 0 1-9.5 0Z" />
+            </svg>
+            Auditoría
+          </span>
+        </button>
       </div>
 
       {/* ── Tab: Usuarios ─────────────────────────────────── */}
@@ -637,7 +702,7 @@ export default function Gestion() {
       {activeTab === "reportes" && (
         <div className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-dark-secondary shadow-lg shadow-black/20">
           <div className="flex items-center justify-between border-b border-zentinel-gold-dark/20 px-6 py-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">Reportes de Dispositivo</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zentinel-gold">Extravíos de Dispositivo</h2>
             <span className="rounded-full bg-red-500/10 px-3 py-0.5 text-xs text-red-400">
               {loadingReportes ? "Cargando..." : `${reportes.filter((r) => r.estado_reporte === "creado").length} activos`}
             </span>
@@ -785,6 +850,17 @@ export default function Gestion() {
       {/* ── Tab: Planes ──────────────────────────────────── */}
       {activeTab === "planes" && isAdmin && token && (
         <PlanesTab token={token} />
+      )}
+
+      {/* ── Tab: Auditoría ───────────────────────────────── */}
+      {activeTab === "auditoria" && token && (
+        <AuditoriaTab
+          token={token}
+          isAdmin={isAdmin}
+          staffList={usuarios
+            .filter((u) => [2, 4, 5].includes(u.id_rol))
+            .map((u) => ({ id: u.id, nombre: u.nombre, apellido: u.apellido }))}
+        />
       )}
 
       {selectedTicketId !== null && token ? (

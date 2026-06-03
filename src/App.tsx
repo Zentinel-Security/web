@@ -55,7 +55,7 @@ function App() {
           <AnimatedRoutes>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/reportes" element={<Inicio />} />
+            <Route path="/extravios" element={<Inicio />} />
             <Route path="/metricas" element={<StaffOnlyRoute><Metricas /></StaffOnlyRoute>} />
             <Route path="/gestion" element={<StaffOnlyRoute><Gestion /></StaffOnlyRoute>} />
             <Route path="/soporte" element={<Soporte />} />

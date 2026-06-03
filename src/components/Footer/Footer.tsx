@@ -23,7 +23,7 @@ export default function Footer() {
           {/* Links */}
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-zentinel-text-muted">
             <Link to="/" className="hover:text-zentinel-gold transition-colors">Inicio</Link>
-            <Link to="/reportes" className="hover:text-zentinel-gold transition-colors">Reportes</Link>
+            <Link to="/extravios" className="hover:text-zentinel-gold transition-colors">Extravío</Link>
             <Link to="/soporte" className="hover:text-zentinel-gold transition-colors">Soporte</Link>
             <Link to="/manual" className="hover:text-zentinel-gold transition-colors">Manual</Link>
           </nav>
