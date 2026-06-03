@@ -480,8 +480,7 @@ export default function AuditoriaTab({ token, isAdmin, staffList }: Props) {
             <select
               value={filterTipo}
               onChange={(e) => setFilterTipo(e.target.value)}
-              style={{ colorScheme: "dark" }}
-              className="rounded-lg border border-zentinel-gold-dark/20 bg-zentinel-bg px-3 py-2 text-sm text-zentinel-text focus:outline-none focus:border-zentinel-gold/50"
+              className="rounded-md border border-zentinel-gold-dark/30 bg-zentinel-dark px-3 py-2 text-sm text-zentinel-text focus:border-zentinel-gold focus:outline-none"
             >
               <option value="">Todos</option>
               {Object.entries(TIPO_EVENTO_LABELS).map(([k, v]) => (
