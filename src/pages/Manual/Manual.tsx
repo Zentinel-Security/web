@@ -89,7 +89,7 @@ export default function Manual() {
         <main className="flex-1 prose prose-invert prose-zentinel max-w-none">
           {/* SECCIÓN 1: REGISTRO */}
           <section id="registro" className="manual-section">
-            <h2 className="manual-h2">1. Registrarse y Loguearse</h2>
+            <h2 className="manual-h2">1. Registrarse y Log</h2>
             <p>
               Para comenzar a utilizar Zentinel, es necesario crear una cuenta
               verificada. Esto asegura que tus datos de emergencia y ubicaciones
