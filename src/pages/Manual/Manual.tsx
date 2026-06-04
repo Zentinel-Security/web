@@ -98,7 +98,7 @@ export default function Manual() {
             <div className="bg-zentinel-dark-secondary p-4 rounded-lg border-l-4 border-zentinel-gold my-4">
               <strong>Nota importante:</strong> Necesitarás un número de
               teléfono válido para completar el registro mediante verificación
-              SMS.
+              SMS esto no.
             </div>
             <h3>Proceso de Registro</h3>
             <ol>
