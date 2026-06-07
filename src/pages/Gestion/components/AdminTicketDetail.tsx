@@ -33,6 +33,8 @@ export default function AdminTicketDetail({
   const [sendError, setSendError] = useState("");
   const [isChangingEstado, setIsChangingEstado] = useState(false);
   const [estadoError, setEstadoError] = useState("");
+  const [pendingEstado, setPendingEstado] = useState<TicketEstado | null>(null);
+  const [motivoEstado, setMotivoEstado] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,17 +91,29 @@ export default function AdminTicketDetail({
     }
   };
 
-  const handleChangeEstado = async (nuevoEstado: TicketEstado) => {
+  const handleChangeEstado = async (nuevoEstado: TicketEstado, motivo?: string) => {
     setIsChangingEstado(true);
     setEstadoError("");
     try {
-      const { ticket: updated } = await cambiarEstadoTicket(token, ticketId, nuevoEstado);
+      const { ticket: updated } = await cambiarEstadoTicket(token, ticketId, nuevoEstado, motivo);
       setDetalle((prev) => (prev ? { ...prev, ticket: { ...prev.ticket, estado: updated.estado } } : prev));
       onUpdated(ticketId, updated.estado);
+      setPendingEstado(null);
+      setMotivoEstado("");
     } catch (err) {
       setEstadoError(err instanceof Error ? err.message : "No se pudo cambiar el estado.");
     } finally {
       setIsChangingEstado(false);
+    }
+  };
+
+  const handleEstadoClick = (e: TicketEstado) => {
+    if (["resuelto", "cerrado"].includes(e)) {
+      setPendingEstado(e);
+      setMotivoEstado("");
+      setEstadoError("");
+    } else {
+      void handleChangeEstado(e);
     }
   };
 
@@ -226,31 +240,66 @@ export default function AdminTicketDetail({
               </p>
             ) : null}
 
-            {/* Estado change row — always visible */}
-            <div className="flex items-center gap-2 flex-wrap pt-1">
-              <span className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">
-                Estado:
-              </span>
-              {ESTADO_OPTIONS.map((e) => (
-                <button
-                  key={e}
-                  disabled={isChangingEstado || ticket.estado === e}
-                  onClick={() => handleChangeEstado(e)}
-                  className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed ${
-                    ticket.estado === e
-                      ? `${ESTADO_BADGE[e]} opacity-100 cursor-default ring-1 ring-inset ${
-                          ticket.estado === "abierto" ? "ring-blue-400/40" :
-                          ticket.estado === "en_progreso" ? "ring-amber-400/40" :
-                          ticket.estado === "resuelto" ? "ring-green-400/40" : "ring-zinc-400/40"
-                        }`
-                      : "bg-zentinel-text/5 text-zentinel-text-muted hover:bg-zentinel-text/10 hover:text-zentinel-text"
-                  }`}
-                >
-                  {ticket.estado === e ? `● ${ESTADO_LABELS[e]}` : ESTADO_LABELS[e]}
-                </button>
-              ))}
-              {isChangingEstado && (
-                <span className="text-xs text-zentinel-text-muted">Actualizando...</span>
+            {/* Estado change row */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-semibold uppercase tracking-wider text-zentinel-text-muted">
+                  Estado:
+                </span>
+                {ESTADO_OPTIONS.map((e) => (
+                  <button
+                    key={e}
+                    disabled={isChangingEstado || ticket.estado === e}
+                    onClick={() => handleEstadoClick(e)}
+                    className={`rounded-full px-3 py-0.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed ${
+                      ticket.estado === e
+                        ? `${ESTADO_BADGE[e]} opacity-100 cursor-default ring-1 ring-inset ${
+                            ticket.estado === "abierto" ? "ring-blue-400/40" :
+                            ticket.estado === "en_progreso" ? "ring-amber-400/40" :
+                            ticket.estado === "resuelto" ? "ring-green-400/40" : "ring-zinc-400/40"
+                          }`
+                        : "bg-zentinel-text/5 text-zentinel-text-muted hover:bg-zentinel-text/10 hover:text-zentinel-text"
+                    }`}
+                  >
+                    {ticket.estado === e ? `● ${ESTADO_LABELS[e]}` : ESTADO_LABELS[e]}
+                  </button>
+                ))}
+                {isChangingEstado && (
+                  <span className="text-xs text-zentinel-text-muted">Actualizando...</span>
+                )}
+              </div>
+
+              {/* Motivo required for resuelto / cerrado */}
+              {pendingEstado && (
+                <div className="rounded-xl border border-zentinel-gold-dark/20 bg-zentinel-bg p-3 space-y-2">
+                  <p className="text-xs text-zentinel-text-muted">
+                    Ingresá el motivo para marcar como
+                    <span className="font-semibold text-zentinel-text mx-1">{ESTADO_LABELS[pendingEstado]}</span>
+                    <span className="text-red-400">*</span>
+                  </p>
+                  <textarea
+                    rows={2}
+                    value={motivoEstado}
+                    onChange={(e) => setMotivoEstado(e.target.value)}
+                    placeholder="Describí el motivo…"
+                    className="w-full resize-none rounded-lg border border-zentinel-gold-dark/25 bg-zentinel-dark-secondary px-3 py-2 text-sm text-zentinel-text placeholder:text-zentinel-text-muted/50 focus:outline-none focus:border-zentinel-gold/50"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => { setPendingEstado(null); setMotivoEstado(""); }}
+                      className="rounded-lg border border-zentinel-gold-dark/25 px-3 py-1.5 text-xs text-zentinel-text-muted hover:bg-zentinel-text/5 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      disabled={!motivoEstado.trim() || isChangingEstado}
+                      onClick={() => void handleChangeEstado(pendingEstado, motivoEstado.trim())}
+                      className="rounded-lg bg-zentinel-gold/10 border border-zentinel-gold/25 px-3 py-1.5 text-xs font-semibold text-zentinel-gold hover:bg-zentinel-gold/20 transition-colors disabled:opacity-50"
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
