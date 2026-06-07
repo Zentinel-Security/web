@@ -35,7 +35,7 @@ export default function ResetearContrasena() {
       setStatus("success");
     } catch (err: any) {
       setError(err?.message || "No se pudo restablecer la contraseña.");
-      setStatus("error");
+      setStatus(err?.code === "SAME_PASSWORD" ? "form" : "error");
     }
   };
 
