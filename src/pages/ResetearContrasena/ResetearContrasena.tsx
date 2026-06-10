@@ -35,7 +35,7 @@ export default function ResetearContrasena() {
       setStatus("success");
     } catch (err: any) {
       setError(err?.message || "No se pudo restablecer la contraseña.");
-      setStatus("error");
+      setStatus(err?.code === "SAME_PASSWORD" ? "form" : "error");
     }
   };
 
@@ -65,7 +65,7 @@ export default function ResetearContrasena() {
             </p>
             <Link
               to="/"
-              className="mt-2 inline-block rounded-md bg-zentinel-primary px-6 py-2 text-sm font-bold text-white transition-colors hover:opacity-90"
+              className="mt-2 inline-block rounded-md bg-zentinel-gold px-6 py-2 text-sm font-bold text-zentinel-dark transition-colors hover:bg-zentinel-gold-light"
             >
               Ir al inicio
             </Link>
@@ -148,7 +148,7 @@ export default function ResetearContrasena() {
 
               <button
                 type="submit"
-                className="w-full rounded-md bg-zentinel-primary py-3 text-sm font-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-full rounded-md bg-zentinel-gold py-3 text-sm font-bold text-zentinel-dark transition-colors hover:bg-zentinel-gold-light disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Restablecer contraseña
               </button>
