@@ -75,6 +75,14 @@ body {
     @apply bg-zentinel-gold/5 p-5 rounded-lg border border-zentinel-gold-dark/15;
   }
 
+  /* Cuadros de notas en el manual — gris más oscuro en modo claro */
+  .manual-note {
+    @apply bg-gray-200 p-4 rounded-lg border-l-4 border-zentinel-gold my-4;
+  }
+  .dark .manual-note {
+    @apply bg-zentinel-dark-secondary;
+  }
+
   /* Texto rico */
   .prose-zentinel p {
     @apply text-zentinel-text-muted leading-relaxed mb-4 text-lg;
