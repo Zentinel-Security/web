@@ -117,6 +117,9 @@ export default function Manual() {
                   9. Botón de pánico
                 </a>
               </li>
+              <li className="pl-4 text-sm text-zentinel-text-muted/60 hidden md:block">
+                • Incidente y seguimiento del recorrido
+              </li>
               <li>
                 <a
                   href="#reporte"
@@ -128,11 +131,20 @@ export default function Manual() {
               </li>
               <li>
                 <a
+                  href="#suscripciones"
+                  onClick={scrollToSection("suscripciones")}
+                  className="nav-item-manual"
+                >
+                  11. Suscripciones, planes y pagos
+                </a>
+              </li>
+              <li>
+                <a
                   href="#soporte"
                   onClick={scrollToSection("soporte")}
                   className="nav-item-manual"
                 >
-                  11. Ayuda y soporte
+                  12. Ayuda y soporte
                 </a>
               </li>
               <li>
@@ -141,7 +153,7 @@ export default function Manual() {
                   onClick={scrollToSection("recomendaciones")}
                   className="nav-item-manual"
                 >
-                  12. Recomendaciones de uso
+                  13. Recomendaciones de uso
                 </a>
               </li>
               <li>
@@ -150,7 +162,7 @@ export default function Manual() {
                   onClick={scrollToSection("preguntas")}
                   className="nav-item-manual"
                 >
-                  13. Preguntas frecuentes
+                  14. Preguntas frecuentes
                 </a>
               </li>
             </ul>
@@ -203,6 +215,10 @@ export default function Manual() {
 
               <div className="bg-zentinel-dark-secondary rounded-lg p-4 border border-zentinel-gold-dark/30">
                 <strong>Alertas automáticas</strong>
+              </div>
+
+              <div className="bg-zentinel-dark-secondary rounded-lg p-4 border border-zentinel-gold-dark/30">
+                <strong>Planes de suscripción con pago online</strong>
               </div>
             </div>
           </section>
@@ -473,7 +489,7 @@ export default function Manual() {
 
           {/* SECCIÓN 6: ZONAS SEGURAS */}
           <section id="zonas" className="manual-section">
-            <h2 className="manual-h2">3. Zonas Seguras</h2>
+            <h2 className="manual-h2">6. Zonas Seguras</h2>
             <p>
               Las zonas seguras son áreas geográficas, como tu casa, oficina o universidad, 
               donde la aplicación puede activar comportamientos automáticos. Puedes configurar 
@@ -584,7 +600,10 @@ export default function Manual() {
             <h2 className="manual-h2">9. Botón de Pánico</h2>
             <p>
               El botón de pánico permite enviar una alerta inmediata a tus usuarios zentinelas 
-              cuando te encuentres en una situación de emergencia.
+              cuando te encuentres en una situación de emergencia. Al activarlo no se envía 
+              únicamente una notificación puntual: se abre un <strong className="text-zentinel-text">incidente</strong>, 
+              es decir, un seguimiento en vivo de la emergencia que registra tu recorrido y todo lo que 
+              sucede hasta que la situación se cierra.
             </p>
             
             <div className="space-y-8 mt-8">
@@ -597,6 +616,89 @@ export default function Manual() {
                   Presiona el botón de pánico ubicado en la parte inferior central de la pantalla 
                   y confirma la acción. Una vez activado, se enviará una alerta de emergencia 
                   junto con tu ubicación actual a tus usuarios zentinelas.
+                </p>
+              </div>
+
+              {/* Inciso: Incidente */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Apertura del Incidente
+                </h3>
+                <p>
+                  Al confirmar la activación se crea automáticamente un incidente asociado a tu cuenta. 
+                  El incidente agrupa toda la información de la emergencia:
+                </p>
+                <ul className="space-y-2 mt-4">
+                  <li><strong className="text-zentinel-text">❖ Ubicación inicial</strong> desde donde se activó el botón.</li>
+                  <li><strong className="text-zentinel-text">❖ Recorrido en tiempo real</strong> de la persona mientras el incidente está abierto.</li>
+                  <li><strong className="text-zentinel-text">❖ Estado del dispositivo</strong>, incluyendo el nivel de batería y avisos de batería baja o crítica.</li>
+                  <li><strong className="text-zentinel-text">❖ Respuestas de tus zentinelas</strong> (vio la alerta, va en camino, no puede ayudar o mensaje rápido).</li>
+                  <li><strong className="text-zentinel-text">❖ Línea de tiempo de eventos</strong> con la hora exacta de cada acción.</li>
+                </ul>
+              </div>
+
+              {/* Inciso: Seguimiento */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Seguimiento del Movimiento en Vivo
+                </h3>
+                <p>
+                  Mientras el incidente permanece abierto, la aplicación envía tu ubicación de forma 
+                  periódica, incluso con la pantalla apagada o la aplicación en segundo plano. Tus 
+                  usuarios zentinelas pueden abrir el incidente y ver tu desplazamiento sobre el mapa 
+                  en tiempo real, junto con el tipo de movimiento detectado 
+                  (<strong className="text-zentinel-text">quieto</strong>, <strong className="text-zentinel-text">caminando</strong> o <strong className="text-zentinel-text">en vehículo</strong>).
+                </p>
+                <p className="text-zentinel-text-muted">
+                  <strong className="text-zentinel-gold">Nota:</strong>{" "}
+                  Si el dispositivo deja de enviar señal durante varios minutos, el incidente pasa al 
+                  estado <strong className="text-zentinel-text">Sin contacto</strong> y tus zentinelas reciben 
+                  un aviso. Cuando la señal se recupera, el incidente vuelve a estar activo y el 
+                  seguimiento continúa.
+                </p>
+              </div>
+
+              {/* Inciso: Recorrido guardado */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Registro del Recorrido
+                </h3>
+                <p>
+                  Cada punto de ubicación enviado durante la emergencia queda guardado dentro del 
+                  incidente. El recorrido no se pierde al cerrar el incidente: queda almacenado como 
+                  un historial consultable con el trazado completo del camino realizado, la fecha y 
+                  hora de cada punto y los eventos ocurridos durante la emergencia.
+                </p>
+                <p>
+                  Esto permite reconstruir posteriormente qué sucedió, por dónde se desplazó la 
+                  persona y cómo respondieron sus zentinelas, información que puede resultar útil 
+                  como respaldo ante una denuncia o un reclamo.
+                </p>
+              </div>
+
+              {/* Inciso: Cierre */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Cierre del Incidente
+                </h3>
+                <p>
+                  Cuando la situación se encuentra bajo control, puedes solicitar el cierre del 
+                  incidente desde la pantalla de la emergencia. Tus usuarios zentinelas reciben la 
+                  solicitud y confirman que estás bien para finalizarlo. Si no hay actividad ni señal 
+                  del dispositivo durante un tiempo prolongado, el incidente se cierra automáticamente 
+                  y queda registrado como expirado.
+                </p>
+              </div>
+
+              {/* Inciso: Historial */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Consultar Incidentes Anteriores
+                </h3>
+                <p>
+                  Los incidentes cerrados quedan disponibles en tu historial de incidentes, donde 
+                  puedes volver a consultar el mapa con el recorrido registrado, las respuestas de 
+                  tus zentinelas y el detalle de los eventos.
                 </p>
               </div>
             </div>
@@ -681,9 +783,121 @@ export default function Manual() {
             </div>
           </section>
 
-          {/* SECCIÓN 11: SOPORTE */}
+          {/* SECCIÓN 11: SUSCRIPCIONES */}
+          <section id="suscripciones" className="manual-section">
+            <h2 className="manual-h2">11. Suscripciones, Planes y Pagos</h2>
+            <p>
+              Zentinel Security funciona con un esquema de planes de suscripción. El plan determina 
+              a qué funcionalidades accedes y con qué límites de uso (por ejemplo, cantidad de 
+              grupos, de integrantes por grupo, de usuarios zentinelas o de zonas seguras).
+            </p>
+
+            <div className="manual-note">
+              <strong>Nota:</strong> Al crear tu cuenta se te asigna automáticamente el plan 
+              inicial gratuito, por lo que puedes comenzar a utilizar la aplicación sin realizar 
+              ningún pago.
+            </div>
+
+            <div className="space-y-8 mt-8">
+              {/* Inciso: Planes */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">Planes Disponibles</h3>
+                <p>
+                  Los planes se diferencian por su precio, su período de facturación (mensual o 
+                  anual) y los límites que habilitan sobre cada funcionalidad. El listado de planes 
+                  vigentes, con su precio y el detalle de lo que incluye cada uno, se muestra 
+                  siempre actualizado dentro de la aplicación en la sección de 
+                  <strong className="text-zentinel-text"> Planes</strong>.
+                </p>
+                <p className="text-zentinel-text-muted">
+                  <strong className="text-zentinel-gold">Importante:</strong>{" "}
+                  Si alcanzas el límite de una funcionalidad incluida en tu plan, la aplicación te 
+                  informa el límite alcanzado y te ofrece mejorar el plan para continuar.
+                </p>
+              </div>
+
+              {/* Inciso: Consultar suscripcion */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Consultar mi Suscripción
+                </h3>
+                <p>
+                  Desde la pestaña <strong className="text-zentinel-text">Ajustes</strong>, accede a la 
+                  opción <strong className="text-zentinel-text">Mi Plan</strong> para ver la suscripción 
+                  activa, la fecha de inicio, la fecha de vencimiento y el consumo actual de cada 
+                  funcionalidad respecto de los límites del plan.
+                </p>
+              </div>
+
+              {/* Inciso: Contratar */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Contratar o Mejorar un Plan
+                </h3>
+                <ol className="space-y-3">
+                  <li>
+                    <strong className="text-zentinel-text">Paso 1:</strong> Ingresa a la sección de <strong className="text-zentinel-text">Planes</strong> y compara las opciones disponibles.
+                  </li>
+                  <li>
+                    <strong className="text-zentinel-text">Paso 2:</strong> Selecciona el plan que deseas contratar y presiona <strong className="text-zentinel-gold">Contratar</strong>.
+                  </li>
+                  <li>
+                    <strong className="text-zentinel-text">Paso 3:</strong> Serás redirigido a <strong className="text-zentinel-text">Mercado Pago</strong>, la plataforma que procesa los pagos, para completar la operación con el medio de pago que prefieras.
+                  </li>
+                  <li>
+                    <strong className="text-zentinel-text">Paso 4:</strong> Al aprobarse el pago, regresarás automáticamente a la aplicación y la nueva suscripción quedará activada.
+                  </li>
+                </ol>
+                <p className="text-zentinel-text-muted">
+                  <strong className="text-zentinel-gold">Nota:</strong>{" "}
+                  Zentinel Security no almacena los datos de tu tarjeta ni de tu medio de pago: 
+                  toda la operación se realiza dentro de la plataforma de Mercado Pago.
+                </p>
+              </div>
+
+              {/* Inciso: Estados del pago */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Estados del Pago
+                </h3>
+                <ul className="space-y-2">
+                  <li><strong className="text-zentinel-text">❖ Aprobado:</strong> el pago se acreditó y el plan queda activo de inmediato.</li>
+                  <li><strong className="text-zentinel-text">❖ Pendiente:</strong> el medio de pago todavía no se acreditó; el plan se activa automáticamente cuando el pago se confirma.</li>
+                  <li><strong className="text-zentinel-text">❖ Rechazado:</strong> el pago no se pudo procesar y la suscripción anterior se mantiene sin cambios.</li>
+                </ul>
+              </div>
+
+              {/* Inciso: Renovacion y vencimiento */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Vigencia y Cambio de Plan
+                </h3>
+                <p>
+                  Cada suscripción tiene una fecha de inicio y una fecha de fin según el período 
+                  contratado. Al contratar un plan nuevo, la suscripción anterior se desactiva y 
+                  comienza a regir la nueva. Si la suscripción paga vence y no se renueva, la cuenta 
+                  vuelve a los límites del plan gratuito, sin que se pierdan tus datos.
+                </p>
+              </div>
+
+              {/* Inciso: Facturacion y reclamos */}
+              <div className="manual-subsection">
+                <h3 className="text-zentinel-gold text-xl mb-2">
+                  Consultas y Reclamos de Facturación
+                </h3>
+                <p>
+                  Ante cualquier inconveniente con un pago o una suscripción, crea un ticket de 
+                  soporte seleccionando el tipo <strong className="text-zentinel-text">Facturación</strong> e 
+                  incluye el número de operación de Mercado Pago para agilizar la gestión. Consulta 
+                  la sección <strong className="text-zentinel-text">Ayuda y Soporte</strong> para más detalles.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* SECCIÓN 12: SOPORTE */}
           <section id="soporte" className="manual-section">
-            <h2 className="manual-h2">11. Ayuda y Soporte</h2>
+            <h2 className="manual-h2">12. Ayuda y Soporte</h2>
             <p>
               La sección de Ayuda y Soporte te permite comunicarte con el equipo de Zentinel Security para realizar consultas, reportar inconvenientes, solicitar asistencia técnica o efectuar reclamos.
             </p>
@@ -750,9 +964,9 @@ export default function Manual() {
             </div>
           </section>
 
-          {/* SECCIÓN 12: RECOMENDACIONES */}
+          {/* SECCIÓN 13: RECOMENDACIONES */}
           <section id="recomendaciones" className="manual-section">
-            <h2 className="manual-h2">12. Recomendaciones de Uso</h2>
+            <h2 className="manual-h2">13. Recomendaciones de Uso</h2>
             <p>
               Para aprovechar al máximo las funcionalidades de Zentinel Security, ten en cuenta las siguientes recomendaciones:
             </p>
@@ -772,9 +986,9 @@ export default function Manual() {
               </div>
           </section>
 
-          {/* SECCIÓN 13: PREGUNTAS */}
+          {/* SECCIÓN 14: PREGUNTAS */}
           <section id="preguntas" className="manual-section">
-            <h2 className="manual-h2">13. Preguntas Frecuentes</h2>
+            <h2 className="manual-h2">14. Preguntas Frecuentes</h2>
             
             <div className="space-y-4 mt-6">
               <details className="manual-subsection">
@@ -783,6 +997,69 @@ export default function Manual() {
                 </summary>
                 <p className="mt-3">
                   Las alertas del botón de pánico son enviadas únicamente a los usuarios zentinelas que hayas configurado previamente.
+                </p>
+              </details>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <details className="manual-subsection">
+                <summary className="cursor-pointer font-semibold text-zentinel-text">
+                  ¿Qué sucede cuando activo el botón de pánico?
+                </summary>
+                <p className="mt-3">
+                  Se abre un incidente que notifica a tus usuarios zentinelas y comienza a registrar 
+                  tu ubicación en tiempo real. Tus zentinelas pueden seguir tu movimiento en el mapa 
+                  mientras el incidente permanece abierto.
+                </p>
+              </details>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <details className="manual-subsection">
+                <summary className="cursor-pointer font-semibold text-zentinel-text">
+                  ¿Se guarda el recorrido que hice durante una emergencia?
+                </summary>
+                <p className="mt-3">
+                  Sí. Todos los puntos de ubicación registrados quedan guardados dentro del 
+                  incidente, junto con los eventos y las respuestas de tus zentinelas. Puedes 
+                  consultar el recorrido completo en el historial de incidentes incluso después de 
+                  cerrarlo.
+                </p>
+              </details>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <details className="manual-subsection">
+                <summary className="cursor-pointer font-semibold text-zentinel-text">
+                  ¿Zentinel Security tiene costo?
+                </summary>
+                <p className="mt-3">
+                  Existe un plan gratuito que se asigna automáticamente al crear la cuenta y planes 
+                  pagos que amplían los límites de uso y habilitan funcionalidades adicionales.
+                </p>
+              </details>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <details className="manual-subsection">
+                <summary className="cursor-pointer font-semibold text-zentinel-text">
+                  ¿Cómo puedo pagar mi suscripción?
+                </summary>
+                <p className="mt-3">
+                  Los pagos se realizan a través de Mercado Pago. Una vez aprobado el pago, el plan 
+                  se activa automáticamente en tu cuenta.
+                </p>
+              </details>
+            </div>
+
+            <div className="space-y-4 mt-6">
+              <details className="manual-subsection">
+                <summary className="cursor-pointer font-semibold text-zentinel-text">
+                  ¿Qué ocurre si vence mi plan pago?
+                </summary>
+                <p className="mt-3">
+                  La cuenta vuelve a los límites del plan gratuito. No se eliminan tus datos, pero 
+                  algunas funcionalidades pueden quedar limitadas hasta que renueves el plan.
                 </p>
               </details>
             </div>
